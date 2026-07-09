@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; background:#FAFAF9; font-family:'IBM Plex Sans', system-ui, sans-serif; color:#1C1B1A; -webkit-font-smoothing:antialiased; }
+    * { box-sizing:border-box; }
+    ::placeholder { color:#ACA79E; }
+    table { border-collapse:collapse; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh;background:#FAFAF9;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 32px;height:64px;background:#FFFFFF;border-bottom:1px solid #E4E1DC;position:sticky;top:0;z-index:20;">
+    <div style="display:flex;align-items:baseline;gap:10px;min-width:170px;">
+      <span style="font-size:18px;font-weight:700;letter-spacing:0.03em;color:#18181B;">VIVO47</span>
+      <span style="font-size:13px;color:#8B877F;">Portal operativo</span>
+    </div>
+    <div style="display:flex;gap:4px;background:#F4F2ED;padding:4px;border-radius:9px;">
+      <button style="{{ tabLiderStyle }}" onClick="{{ goToLider }}">Concentrado</button>
+      <button style="{{ tabRpStyle }}" onClick="{{ goToRp }}">Vista RP</button>
+      <button style="{{ tabPerfilStyle }}" onClick="{{ goToPerfil }}">Vista Socio</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;min-width:170px;justify-content:flex-end;">
+      <div style="width:32px;height:32px;border-radius:999px;background:#EFEDE9;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#57534E;flex:none;">OP</div>
+    </div>
+  </div>
+
+  <sc-if value="{{ isPerfil }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:1180px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:24px;">
+
+    <div style="position:relative;display:flex;flex-direction:column;gap:0;">
+      <input type="text" placeholder="Buscar socio por nombre…" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;max-width:340px;" value="{{ perfilSearch }}" onChange="{{ onPerfilSearchChange }}"></input>
+      <sc-if value="{{ showPerfilMatches }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:44px;left:0;width:340px;background:#FFFFFF;border:1px solid #E4E1DC;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.06);z-index:15;overflow:hidden;">
+          <sc-for list="{{ perfilSearchMatches }}" as="pm" hint-placeholder-count="3">
+            <div style="padding:10px 14px;border-bottom:1px solid #EEEBE5;cursor:pointer;display:flex;flex-direction:column;gap:2px;" onClick="{{ pm.select }}">
+              <span style="font-size:13px;font-weight:600;color:#2B2926;">{{ pm.name }}</span>
+              <span style="font-size:11px;color:#8B877F;">{{ pm.memberNo }} · {{ pm.rp }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noPerfilMatches }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:10px 14px;font-size:13px;color:#ACA79E;">Sin resultados.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:28px 32px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+      <div style="width:76px;height:76px;border-radius:999px;background:#EFEDE9;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;color:#4A4640;flex:none;">{{ selected.initials }}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:240px;">
+        <div style="font-size:26px;font-weight:600;color:#18181B;">{{ selected.name }}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;color:#6E6A64;">
+          <span style="background:#F4F2ED;color:#4A4640;font-weight:600;padding:3px 10px;border-radius:999px;font-size:12px;">{{ selected.memberNo }}</span>
+          <span>RP: {{ selected.rp }}</span>
+          <span style="color:#D8D3CB;">·</span>
+          <span>Alta: {{ selected.altaDate }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:999px;background:#E8F5EC;color:#1E7A42;font-size:13px;font-weight:500;">
+          <span style="font-weight:700;">✓</span> Encuesta
+        </div>
+        <div style="{{ selAppChipStyle }}">{{ selAppIcon }} APP Descargada</div>
+        <div style="{{ selSportlabChipStyle }}">{{ selSportlabIcon }} SPORTLAB</div>
+        <div style="{{ selKeepgoingChipStyle }}">{{ selKeepgoingIcon }} KEEP GOING</div>
+      </div>
+      <div style="font-size:12px;color:#ACA79E;">La encuesta es el punto de entrada al sistema y no puede desactivarse.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:15px;font-weight:600;color:#18181B;">Evaluación</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Enfoque</div>
+          <div style="font-size:30px;font-weight:600;color:#18181B;">{{ selected.evaluacion.enfoque.score }}<span style="font-size:15px;color:#ACA79E;font-weight:500;">/10</span></div>
+          <div style="font-size:12px;color:#8B877F;">{{ selected.evaluacion.enfoque.label }}</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Adherencia</div>
+          <div style="font-size:30px;font-weight:600;color:#18181B;">{{ selected.evaluacion.adherencia.score }}<span style="font-size:15px;color:#ACA79E;font-weight:500;">/10</span></div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Frecuencia</div>
+          <div style="font-size:30px;font-weight:600;color:#18181B;">{{ selected.evaluacion.frecuencia.score }}<span style="font-size:15px;color:#ACA79E;font-weight:500;">/10</span></div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Condición</div>
+          <div style="font-size:22px;font-weight:600;color:#18181B;">{{ selected.evaluacion.condicion.level }}</div>
+          <div style="font-size:12px;color:#8B877F;">Puntuación: {{ selected.evaluacion.condicion.score }}/10</div>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Riesgo de abandono</div>
+          <div style="font-size:30px;font-weight:600;color:#18181B;">{{ selected.evaluacion.riesgo.score }}<span style="font-size:15px;color:#ACA79E;font-weight:500;">/10</span></div>
+          <span style="{{ selected.riskBadgeStyle }}">{{ selected.risk }}</span>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Nivel general</div>
+          <div style="font-size:22px;font-weight:600;color:#18181B;">{{ selected.evaluacion.nivelGeneral.label }}</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:28px 32px;display:flex;flex-direction:column;">
+      <div style="font-size:15px;font-weight:600;color:#18181B;margin-bottom:18px;">Datos de intake</div>
+
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Objetivo principal</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.objetivo }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Meta a 90 días</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.meta90 }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Relación actual con el ejercicio</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.relacion }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Días disponibles para entrenar por semana</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.dias }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Condición física percibida</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.condicionPerc }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Qué siente que más necesita mejorar hoy</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.mejorar }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Por qué ha abandonado el ejercicio antes</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.abandono }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Qué le ayudaría a mantenerse constante</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.intake.ayudaria }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:8px;">Nivel de confianza (1–10)</div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="flex:1;height:8px;border-radius:999px;background:#EEEBE5;overflow:hidden;max-width:280px;">
+            <div style="height:100%;border-radius:999px;background:#18181B;width:{{ selected.intake.confianzaPct }}%;"></div>
+          </div>
+          <div style="font-size:15px;font-weight:600;color:#18181B;">{{ selected.intake.confianza }}/10</div>
+        </div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:8px;">Nota a su yo futuro</div>
+        <div style="border-left:3px solid #B08D45;background:#FAF8F3;padding:12px 18px;font-size:15px;line-height:1.55;color:#2B2926;">{{ selected.intake.notaFuturo }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:8px;">Lo que se diría en sus momentos difíciles</div>
+        <div style="border-left:3px solid #B08D45;background:#FAF8F3;padding:12px 18px;font-size:15px;line-height:1.55;color:#2B2926;">{{ selected.intake.momentos }}</div>
+      </div>
+      <div style="padding:14px 0;">
+        <div style="font-size:12px;font-weight:500;letter-spacing:0.03em;text-transform:uppercase;color:#948F86;margin-bottom:6px;">Celular</div>
+        <div style="font-size:15px;line-height:1.5;color:#2B2926;">{{ selected.phone }}</div>
+      </div>
+    </div>
+
+    <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:28px 32px;display:flex;flex-direction:column;gap:18px;">
+      <div style="font-size:15px;font-weight:600;color:#18181B;">Comentarios del staff</div>
+      <div style="display:flex;flex-direction:column;">
+        <sc-for list="{{ selected.comments }}" as="c" hint-placeholder-count="2">
+          <div style="padding:14px 0;border-bottom:1px solid #EEEBE5;display:flex;flex-direction:column;gap:4px;">
+            <div style="display:flex;gap:8px;align-items:baseline;font-size:13px;">
+              <span style="font-weight:600;color:#2B2926;">{{ c.staff }}</span>
+              <span style="color:#ACA79E;">{{ c.date }}</span>
+            </div>
+            <div style="font-size:14px;color:#4A4640;line-height:1.5;">{{ c.text }}</div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ selected.noComments }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13px;color:#ACA79E;padding:8px 0;">Aún no hay comentarios.</div>
+        </sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <textarea style="border:1px solid #E4E1DC;border-radius:8px;padding:12px 14px;font-family:inherit;font-size:14px;resize:vertical;min-height:72px;color:#2B2926;" placeholder="Agregar un comentario interno…" value="{{ newComment }}" onChange="{{ onCommentChange }}"></textarea>
+        <div><button style="background:#18181B;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;" onClick="{{ saveComment }}">Guardar</button></div>
+      </div>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isRp }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1180px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:24px;">
+
+    <div style="display:flex;align-items:center;gap:20px;">
+      <div style="width:64px;height:64px;border-radius:999px;background:#EFEDE9;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:#4A4640;flex:none;">{{ rpInitials }}</div>
+      <div>
+        <div style="font-size:22px;font-weight:600;color:#18181B;">{{ rpName }}</div>
+        <div style="font-size:13px;color:#8B877F;">{{ rpTotal }} socios asignados</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Encuesta hecha</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:26px;font-weight:600;color:#18181B;">{{ rpKpis.encuesta.count }}</span>
+          <span style="font-size:14px;font-weight:600;color:#1E7A42;">100%</span>
+        </div>
+        <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;width:100%;background:#1E7A42;"></div></div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">APP Descargada</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:26px;font-weight:600;color:#18181B;">{{ rpKpis.app.count }}</span>
+          <span style="font-size:14px;font-weight:600;color:{{ rpKpis.app.color }};">{{ rpKpis.app.pctLabel }}</span>
+        </div>
+        <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rpKpis.app.color }};width:{{ rpKpis.app.pct }}%;"></div></div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">SPORTLAB</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:26px;font-weight:600;color:#18181B;">{{ rpKpis.sportlab.count }}</span>
+          <span style="font-size:14px;font-weight:600;color:{{ rpKpis.sportlab.color }};">{{ rpKpis.sportlab.pctLabel }}</span>
+        </div>
+        <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rpKpis.sportlab.color }};width:{{ rpKpis.sportlab.pct }}%;"></div></div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">KEEP GOING</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:26px;font-weight:600;color:#18181B;">{{ rpKpis.keepgoing.count }}</span>
+          <span style="font-size:14px;font-weight:600;color:{{ rpKpis.keepgoing.color }};">{{ rpKpis.keepgoing.pctLabel }}</span>
+        </div>
+        <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rpKpis.keepgoing.color }};width:{{ rpKpis.keepgoing.pct }}%;"></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <input type="text" placeholder="Buscar socio por nombre…" style="min-width:220px;border:1px solid #E4E1DC;border-radius:8px;padding:9px 14px;font-size:14px;font-family:inherit;color:#2B2926;" value="{{ rpSearch }}" onChange="{{ onRpSearchChange }}"></input>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <sc-for list="{{ rpFilterOptions }}" as="f" hint-placeholder-count="5">
+          <button style="{{ f.style }}" onClick="{{ f.onClick }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #E4E1DC;border-radius:10px;overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%;font-size:14px;">
+          <thead>
+            <tr style="background:#FAFAF9;">
+              <th style="text-align:left;padding:12px 20px;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:#948F86;font-weight:500;border-bottom:1px solid #E4E1DC;">Socio</th>
+              <th style="text-align:center;padding:12px 20px;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:#948F86;font-weight:500;border-bottom:1px solid #E4E1DC;">APP</th>
+              <th style="text-align:center;padding:12px 20px;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:#948F86;font-weight:500;border-bottom:1px solid #E4E1DC;">SPORTLAB</th>
+              <th style="text-align:center;padding:12px 20px;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:#948F86;font-weight:500;border-bottom:1px solid #E4E1DC;">KEEP GOING</th>
+              <th style="text-align:left;padding:12px 20px;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:#948F86;font-weight:500;border-bottom:1px solid #E4E1DC;">Riesgo</th>
+              <th style="text-align:left;padding:12px 20px;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:#948F86;font-weight:500;border-bottom:1px solid #E4E1DC;">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ rpVisibleMembers }}" as="m" hint-placeholder-count="5">
+              <tr style="border-bottom:1px solid #EEEBE5;">
+                <td style="padding:14px 20px;">
+                  <div style="display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-weight:600;color:#2B2926;">{{ m.name }}</span>
+                    <span style="font-size:12px;color:#8B877F;">{{ m.memberNo }} · {{ m.altaDate }}</span>
+                  </div>
+                </td>
+                <td style="padding:14px 20px;text-align:center;"><span style="{{ m.appCheckStyle }}">{{ m.appCheck }}</span></td>
+                <td style="padding:14px 20px;text-align:center;"><span style="{{ m.sportlabCheckStyle }}">{{ m.sportlabCheck }}</span></td>
+                <td style="padding:14px 20px;text-align:center;"><span style="{{ m.keepgoingCheckStyle }}">{{ m.keepgoingCheck }}</span></td>
+                <td style="padding:14px 20px;"><span style="{{ m.riskBadgeStyle }}">{{ m.risk }}</span></td>
+                <td style="padding:14px 20px;"><button style="background:none;border:1px solid #D9D5CE;padding:6px 14px;border-radius:7px;font-size:13px;color:#2B2926;cursor:pointer;" onClick="{{ m.viewProfile }}">Ver perfil</button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E4E1DC;font-size:13px;color:#8B877F;">
+        <span>Mostrando {{ rpVisibleCount }} de {{ rpFilteredCount }} socios</span>
+        <sc-if value="{{ rpHasMore }}" hint-placeholder-val="{{ false }}">
+          <button style="background:none;border:none;color:#1D4ED8;font-size:13px;font-weight:600;cursor:pointer;padding:0;" onClick="{{ toggleRpShowAll }}">Ver todos</button>
+        </sc-if>
+      </div>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isLider }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:24px;">
+
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:22px;font-weight:600;color:#18181B;">Panel general</div>
+        <div style="font-size:13px;color:#8B877F;margin-top:4px;">{{ liderSucursal }} · {{ liderPeriod }}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:26px;font-weight:600;color:#18181B;">{{ liderTotal }}</div>
+        <div style="font-size:12px;color:#8B877F;">socios activos</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Total socios</div>
+        <div style="font-size:28px;font-weight:600;color:#18181B;">{{ liderTotal }}</div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">APP Descargada</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:24px;font-weight:600;color:#18181B;">{{ liderKpis.app.count }}</span>
+          <span style="font-size:13px;font-weight:600;color:{{ liderKpis.app.color }};">{{ liderKpis.app.pctLabel }}</span>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">SPORTLAB</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:24px;font-weight:600;color:#18181B;">{{ liderKpis.sportlab.count }}</span>
+          <span style="font-size:13px;font-weight:600;color:{{ liderKpis.sportlab.color }};">{{ liderKpis.sportlab.pctLabel }}</span>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">KEEP GOING</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:24px;font-weight:600;color:#18181B;">{{ liderKpis.keepgoing.count }}</span>
+          <span style="font-size:13px;font-weight:600;color:{{ liderKpis.keepgoing.color }};">{{ liderKpis.keepgoing.pctLabel }}</span>
+        </div>
+      </div>
+      <div style="background:#FBEAEA;border:1px solid #F4CCCA;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#B42318;">Riesgo alto</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:24px;font-weight:600;color:#B42318;">{{ liderKpis.riesgoAlto.count }}</span>
+          <span style="font-size:13px;font-weight:600;color:#B42318;">{{ liderKpis.riesgoAlto.pctLabel }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="font-size:15px;font-weight:600;color:#18181B;">Por representante</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+        <sc-for list="{{ perRep }}" as="rep" hint-placeholder-count="3">
+          <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:40px;height:40px;border-radius:999px;background:#EFEDE9;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#4A4640;flex:none;">{{ rep.initials }}</div>
+              <div>
+                <div style="font-size:14px;font-weight:600;color:#18181B;">{{ rep.name }}</div>
+                <div style="font-size:12px;color:#8B877F;">{{ rep.count }} socios</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>APP</span><span style="font-weight:600;color:{{ rep.appColor }};">{{ rep.appPctLabel }}</span></div>
+                <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rep.appColor }};width:{{ rep.appPct }}%;"></div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>SPORTLAB</span><span style="font-weight:600;color:{{ rep.sportlabColor }};">{{ rep.sportlabPctLabel }}</span></div>
+                <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rep.sportlabColor }};width:{{ rep.sportlabPct }}%;"></div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>KEEP GOING</span><span style="font-weight:600;color:{{ rep.keepgoingColor }};">{{ rep.keepgoingPctLabel }}</span></div>
+                <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rep.keepgoingColor }};width:{{ rep.keepgoingPct }}%;"></div></div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <input type="text" placeholder="Buscar socio por nombre…" style="flex:1;min-width:220px;border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;" value="{{ liderSearch }}" onChange="{{ onSearchChange }}"></input>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <sc-for list="{{ liderRpFilterOptions }}" as="f" hint-placeholder-count="4">
+          <button style="{{ f.style }}" onClick="{{ f.onClick }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <sc-for list="{{ liderQuickFilterOptions }}" as="f" hint-placeholder-count="2">
+          <button style="{{ f.style }}" onClick="{{ f.onClick }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #E4E1DC;border-radius:10px;overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table style="width:100%;font-size:14px;">
+          <thead>
+            <tr style="background:#FAFAF9;">
+              <sc-for list="{{ liderColumns }}" as="col" hint-placeholder-count="7">
+                <th style="{{ col.thStyle }}">
+                  <button style="{{ col.btnStyle }}" onClick="{{ col.onClick }}">{{ col.label }}<span>{{ col.arrow }}</span></button>
+                </th>
+              </sc-for>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ liderFilteredMembers }}" as="m" hint-placeholder-count="8">
+              <tr style="border-bottom:1px solid #EEEBE5;">
+                <td style="padding:14px 20px;">
+                  <div style="display:flex;flex-direction:column;gap:2px;">
+                    <span style="font-weight:600;color:#2B2926;">{{ m.name }}</span>
+                    <span style="font-size:12px;color:#8B877F;">{{ m.memberNo }}</span>
+                  </div>
+                </td>
+                <td style="padding:8px 20px;">
+                  <select style="border:1px solid #E4E1DC;border-radius:7px;padding:6px 8px;font-size:13px;font-family:inherit;color:#2B2926;background:#fff;" value="{{ m.rp }}" onChange="{{ m.onRpChange }}">
+                    <option value="Andrea Torres">Andrea Torres</option>
+                    <option value="Mauricio Delgado">Mauricio Delgado</option>
+                    <option value="Fernanda López">Fernanda López</option>
+                  </select>
+                </td>
+                <td style="padding:14px 20px;text-align:center;"><button style="{{ m.appCheckButtonStyle }}" onClick="{{ m.appToggle }}">{{ m.appCheck }}</button></td>
+                <td style="padding:14px 20px;text-align:center;"><button style="{{ m.sportlabCheckButtonStyle }}" onClick="{{ m.sportlabToggle }}">{{ m.sportlabCheck }}</button></td>
+                <td style="padding:14px 20px;text-align:center;"><button style="{{ m.keepgoingCheckButtonStyle }}" onClick="{{ m.keepgoingToggle }}">{{ m.keepgoingCheck }}</button></td>
+                <td style="padding:14px 20px;"><span style="{{ m.riskBadgeStyle }}">{{ m.risk }}</span></td>
+                <td style="padding:14px 20px;color:#4A4640;">{{ m.altaDate }}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E4E1DC;font-size:13px;color:#8B877F;">
+        <span>Mostrando {{ liderFilteredCount }} de {{ liderTotal }} socios</span>
+        <button style="background:none;border:1px solid #D9D5CE;padding:6px 14px;border-radius:7px;font-size:13px;color:#2B2926;cursor:pointer;" onClick="{{ exportTable }}">Exportar tabla</button>
+      </div>
+    </div>
+
+  </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+
+  members = [
+    {id:1, name:'Diego Hernández Ramos', memberNo:'#047', altaDate:'12 jun 2026', rp:'Andrea Torres', phone:'33 4521 8890', app:true, sportlab:true, keepgoing:false, risk:'Medio'},
+    {id:2, name:'Karla Jiménez Solís', memberNo:'#048', altaDate:'15 jun 2026', rp:'Andrea Torres', phone:'33 2210 7734', app:true, sportlab:false, keepgoing:false, risk:'Alto'},
+    {id:3, name:'Roberto Cabrera Ortiz', memberNo:'#049', altaDate:'18 jun 2026', rp:'Andrea Torres', phone:'33 5567 1123', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
+    {id:4, name:'Paulina Reyes Duarte', memberNo:'#050', altaDate:'20 jun 2026', rp:'Andrea Torres', phone:'33 1298 4456', app:false, sportlab:false, keepgoing:false, risk:'Alto'},
+    {id:5, name:'Luis Fernando Aceves', memberNo:'#051', altaDate:'22 jun 2026', rp:'Andrea Torres', phone:'33 4432 9081', app:true, sportlab:true, keepgoing:false, risk:'Medio'},
+    {id:6, name:'Marisol Camacho Vega', memberNo:'#052', altaDate:'10 jun 2026', rp:'Mauricio Delgado', phone:'33 6690 2245', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
+    {id:7, name:'Emilio Santos Rivera', memberNo:'#053', altaDate:'11 jun 2026', rp:'Mauricio Delgado', phone:'33 3321 8867', app:false, sportlab:false, keepgoing:false, risk:'Alto'},
+    {id:8, name:'Daniela Ponce Aguilar', memberNo:'#054', altaDate:'14 jun 2026', rp:'Mauricio Delgado', phone:'33 7723 1190', app:true, sportlab:false, keepgoing:false, risk:'Medio'},
+    {id:9, name:'Jorge Alberto Nuño', memberNo:'#055', altaDate:'17 jun 2026', rp:'Mauricio Delgado', phone:'33 9081 4432', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
+    {id:10, name:'Ximena Padilla Cortés', memberNo:'#056', altaDate:'19 jun 2026', rp:'Mauricio Delgado', phone:'33 5544 6620', app:false, sportlab:true, keepgoing:false, risk:'Medio'},
+    {id:11, name:'Alejandro Villaseñor', memberNo:'#057', altaDate:'09 jun 2026', rp:'Fernanda López', phone:'33 2287 9034', app:true, sportlab:true, keepgoing:false, risk:'Bajo'},
+    {id:12, name:'Renata Ibarra Solís', memberNo:'#058', altaDate:'13 jun 2026', rp:'Fernanda López', phone:'33 6612 3390', app:false, sportlab:false, keepgoing:false, risk:'Alto'},
+    {id:13, name:'Sebastián Ochoa Mena', memberNo:'#059', altaDate:'16 jun 2026', rp:'Fernanda López', phone:'33 4409 8871', app:true, sportlab:false, keepgoing:true, risk:'Medio'},
+    {id:14, name:'Gabriela Montes Cid', memberNo:'#060', altaDate:'21 jun 2026', rp:'Fernanda López', phone:'33 8890 2214', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
+  ];
+
+  reps = ['Andrea Torres', 'Mauricio Delgado', 'Fernanda López'];
+
+  baseComments = {
+    1: [
+      {staff:'Andrea Torres (RP)', date:'15 jun 2026', text:'Diego se mostró motivado en la primera sesión de evaluación. Le cuesta la constancia entre semana por su horario laboral.'},
+      {staff:'Iván Ruiz (Coach)', date:'2 jul 2026', text:'Completó su plan de fuerza de la semana. Buena actitud, sigue sin descargar SPORTLAB.'},
+    ],
+    2: [
+      {staff:'Andrea Torres (RP)', date:'16 jun 2026', text:'Karla no ha vuelto a asistir desde su segunda visita. Se le contactó por WhatsApp sin respuesta.'},
+    ],
+    7: [
+      {staff:'Mauricio Delgado (RP)', date:'12 jun 2026', text:'Emilio comentó que su horario cambió y ya no puede entrenar en las mañanas. Se le propuso horario vespertino.'},
+    ],
+  };
+
+  objetivoPool = ['Bajar de peso y mejorar condición cardiovascular','Ganar masa muscular y fuerza general','Mejorar mi salud general y energía diaria','Tonificar y sentirme mejor con mi cuerpo','Prepararme físicamente para una carrera de 10K'];
+  meta90Pool = ['Reducir 6 kg y poder correr 5 km sin parar','Subir 3 kg de músculo y aumentar mis pesos base en un 20%','Entrenar 4 veces por semana de forma constante','Bajar 2 tallas y sentirme con más energía','Terminar mi primera carrera de 10K sin caminar'];
+  relacionPool = ['Intermitente, entreno cuando tengo tiempo pero me cuesta ser constante','Empezando desde cero, casi no tengo experiencia previa','Constante pero sin un plan estructurado','Buena, entreno seguido pero sin resultados claros','Distante, llevo tiempo sin entrenar en serio'];
+  diasPool = ['3 días por semana','2 días por semana','4 días por semana','5 días por semana','3 días por semana'];
+  condicionPercPool = ['Regular','Baja','Buena','Regular','Baja'];
+  mejorarPool = ['Resistencia y hábito de constancia','Fuerza y técnica en ejercicios básicos','Disciplina y organización de horarios','Alimentación y descanso','Motivación para no abandonar a medio camino'];
+  abandonoPool = ['Por falta de tiempo y lesiones menores en la rodilla','Por falta de motivación al no ver resultados rápido','Por cambios de horario laboral','Por no tener un plan claro a seguir','Por lesiones y miedo a volver a lastimarse'];
+  ayudariaPool = ['Un plan claro y seguimiento semanal de un coach','Entrenar con un grupo o compañero','Ver resultados medibles cada mes','Recordatorios y seguimiento cercano del staff','Clases dirigidas con horario fijo'];
+  confianzaPool = [7,5,8,6,4];
+  notaFuturoPool = ['En unos meses vas a agradecer no haberte rendido. Cada sesión cuenta, aunque no lo sientas todavía.','No busques ser perfecto, busca ser constante. Eso es lo que te va a cambiar.','El cuerpo que quieres se construye con los días en que no tenías ganas y fuiste de todos modos.','Confía en el proceso, los resultados llegan cuando menos los esperas.','Cada entrenamiento es un voto por la persona que quieres ser.'];
+  momentosPool = ['Ya has llegado más lejos de lo que crees. Un mal día no borra el progreso de tres meses.','Esto es temporal, tu esfuerzo no. Sigue un paso a la vez.','Recuerda por qué empezaste. Eso no ha cambiado.','No tienes que sentirte motivado para entrenar, solo tienes que empezar.','Lo difícil de hoy es lo que te hace más fuerte mañana.'];
+
+  state = {
+    currentScreen: 'perfil',
+    selectedMemberId: 1,
+    newComment: '',
+    extraComments: {},
+    rpFilter: 'todos',
+    rpSearch: '',
+    rpShowAll: false,
+    liderSearch: '',
+    liderRpFilter: 'todos',
+    liderQuickFilter: 'ninguno',
+    perfilSearch: '',
+    members: null,
+    liderSortKey: 'risk',
+    liderSortDir: 'asc',
+  };
+
+  constructor(props) {
+    super(props);
+    this.state.members = this.members.map(m => ({ ...m }));
+  }
+
+  onPerfilSearchChange = (e) => this.setState({ perfilSearch: e.target.value });
+  onRpSearchChange = (e) => this.setState({ rpSearch: e.target.value });
+
+  updateMember = (id, patch) => {
+    this.setState(s => ({ members: s.members.map(m => m.id === id ? { ...m, ...patch } : m) }));
+  };
+  toggleFlag = (id, field) => {
+    this.setState(s => ({ members: s.members.map(m => m.id === id ? { ...m, [field]: !m[field] } : m) }));
+  };
+
+  initialsOf(name) {
+    const parts = name.split(' ');
+    return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  riskColors(risk) {
+    if (risk === 'Alto') return { bg: '#FBEAEA', text: '#B42318' };
+    if (risk === 'Medio') return { bg: '#FDF3DF', text: '#92610A' };
+    return { bg: '#E8F5EC', text: '#1E7A42' };
+  }
+
+  riskBadgeStyle(risk) {
+    const c = this.riskColors(risk);
+    return { background: c.bg, color: c.text, fontSize: '12px', fontWeight: 600, padding: '4px 12px', borderRadius: '999px', display: 'inline-block' };
+  }
+
+  riskSelectStyle(risk) {
+    const c = this.riskColors(risk);
+    return { background: c.bg, color: c.text, fontSize: '13px', fontWeight: 600, padding: '6px 8px', borderRadius: '7px', border: '1px solid #E4E1DC', fontFamily: 'inherit', cursor: 'pointer' };
+  }
+
+  tierColor(pct) {
+    if (pct >= 100) return '#1E7A42';
+    if (pct >= 70) return '#1D4ED8';
+    if (pct >= 40) return '#B45309';
+    return '#B42318';
+  }
+
+  checkStyle(active) {
+    return { fontSize: '15px', fontWeight: 700, color: active ? '#1E7A42' : '#B0ABA3' };
+  }
+
+  checkButtonStyle(active) {
+    return { fontSize: '15px', fontWeight: 700, color: active ? '#1E7A42' : '#B0ABA3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: '2px 4px' };
+  }
+
+  chipStyle(active) {
+    return { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '999px', fontSize: '13px', fontWeight: 500, background: active ? '#E8F5EC' : '#F1EFEA', color: active ? '#1E7A42' : '#928D85' };
+  }
+
+  computeRisk(m) {
+    const count = (m.app ? 1 : 0) + (m.sportlab ? 1 : 0) + (m.keepgoing ? 1 : 0);
+    if (count >= 2) return 'Bajo';
+    if (count === 1) return 'Medio';
+    return 'Alto';
+  }
+
+  deriveScore(m, offset) {
+    let s = 5 + (m.app ? 1 : 0) + (m.sportlab ? 1 : 0) + (m.keepgoing ? 1 : 0) + offset;
+    if (m.risk === 'Alto') s -= 2;
+    if (m.risk === 'Bajo') s += 1;
+    return Math.max(1, Math.min(10, s));
+  }
+
+  getEvaluacion(m) {
+    if (m.id === 1) {
+      return {
+        enfoque: { score: 8, label: 'Alto enfoque' },
+        adherencia: { score: 6 },
+        frecuencia: { score: 7 },
+        condicion: { level: 'Intermedio', score: 5 },
+        riesgo: { score: 5 },
+        nivelGeneral: { label: 'En progreso' },
+      };
+    }
+    const enfoque = this.deriveScore(m, 0);
+    const adherencia = this.deriveScore(m, -1);
+    const frecuencia = this.deriveScore(m, -1);
+    const condScore = this.deriveScore(m, -1);
+    const condLevel = condScore >= 7 ? 'Alto' : condScore >= 4 ? 'Intermedio' : 'Bajo';
+    const riesgoScore = m.risk === 'Alto' ? 3 : m.risk === 'Medio' ? 5 : 8;
+    const nivelLabel = m.risk === 'Alto' ? 'Necesita atención' : m.risk === 'Medio' ? 'En progreso' : 'Estable';
+    return {
+      enfoque: { score: enfoque, label: enfoque >= 7 ? 'Alto enfoque' : enfoque >= 4 ? 'Enfoque moderado' : 'Bajo enfoque' },
+      adherencia: { score: adherencia },
+      frecuencia: { score: frecuencia },
+      condicion: { level: condLevel, score: condScore },
+      riesgo: { score: riesgoScore },
+      nivelGeneral: { label: nivelLabel },
+    };
+  }
+
+  getIntake(m) {
+    if (m.id === 1) {
+      return {
+        objetivo: 'Bajar de peso y mejorar condición cardiovascular',
+        meta90: 'Reducir 6 kg y poder correr 5 km sin parar',
+        relacion: 'Intermitente, entreno cuando tengo tiempo pero me cuesta ser constante',
+        dias: '3 días por semana',
+        condicionPerc: 'Regular',
+        mejorar: 'Resistencia y hábito de constancia',
+        abandono: 'Por falta de tiempo y lesiones menores en la rodilla',
+        ayudaria: 'Un plan claro y seguimiento semanal de un coach',
+        confianza: 7,
+        confianzaPct: 70,
+        notaFuturo: 'En unos meses vas a agradecer no haberte rendido. Cada sesión cuenta, aunque no lo sientas todavía.',
+        momentos: 'Ya has llegado más lejos de lo que crees. Un mal día no borra el progreso de tres meses.',
+      };
+    }
+    const i = m.id % 5;
+    const confianza = this.confianzaPool[i];
+    return {
+      objetivo: this.objetivoPool[i], meta90: this.meta90Pool[i], relacion: this.relacionPool[i],
+      dias: this.diasPool[i], condicionPerc: this.condicionPercPool[i], mejorar: this.mejorarPool[i],
+      abandono: this.abandonoPool[i], ayudaria: this.ayudariaPool[i], confianza: confianza, confianzaPct: confianza * 10,
+      notaFuturo: this.notaFuturoPool[i], momentos: this.momentosPool[i],
+    };
+  }
+
+  enrich(m0) {
+    const risk = this.computeRisk(m0);
+    const m = { ...m0, risk };
+    return {
+      ...m,
+      initials: this.initialsOf(m.name),
+      riskBadgeStyle: this.riskBadgeStyle(m.risk),
+      appCheck: m.app ? '✓' : '✕',
+      appCheckStyle: this.checkStyle(m.app),
+      sportlabCheck: m.sportlab ? '✓' : '✕',
+      sportlabCheckStyle: this.checkStyle(m.sportlab),
+      keepgoingCheck: m.keepgoing ? '✓' : '✕',
+      keepgoingCheckStyle: this.checkStyle(m.keepgoing),
+      appCheckButtonStyle: this.checkButtonStyle(m.app),
+      sportlabCheckButtonStyle: this.checkButtonStyle(m.sportlab),
+      keepgoingCheckButtonStyle: this.checkButtonStyle(m.keepgoing),
+      evaluacion: this.getEvaluacion(m),
+      intake: this.getIntake(m),
+      comments: (this.baseComments[m.id] || []).concat(this.state.extraComments[m.id] || []),
+      noComments: ((this.baseComments[m.id] || []).length + (this.state.extraComments[m.id] || []).length) === 0,
+      viewProfile: () => this.goTo('perfil', m.id),
+      appToggle: () => this.toggleFlag(m0.id, 'app'),
+      sportlabToggle: () => this.toggleFlag(m0.id, 'sportlab'),
+      keepgoingToggle: () => this.toggleFlag(m0.id, 'keepgoing'),
+      onRpChange: (e) => this.updateMember(m0.id, { rp: e.target.value }),
+    };
+  }
+
+  goTo = (screen, memberId) => {
+    this.setState(s => ({ currentScreen: screen, selectedMemberId: memberId != null ? memberId : s.selectedMemberId }));
+  };
+
+  onCommentChange = (e) => this.setState({ newComment: e.target.value });
+
+  saveComment = () => {
+    const text = this.state.newComment.trim();
+    if (!text) return;
+    const id = this.state.selectedMemberId;
+    const existing = this.state.extraComments[id] || [];
+    this.setState(s => ({
+      extraComments: { ...s.extraComments, [id]: [...existing, { staff: 'Tú (Staff)', date: 'Hoy', text: text }] },
+      newComment: '',
+    }));
+  };
+
+  setRpFilter = (f) => this.setState({ rpFilter: f, rpShowAll: false });
+  toggleRpShowAll = () => this.setState(s => ({ rpShowAll: !s.rpShowAll }));
+
+  onSearchChange = (e) => this.setState({ liderSearch: e.target.value });
+  setLiderRpFilter = (name) => this.setState({ liderRpFilter: name });
+  setLiderQuickFilter = (f) => this.setState(s => ({ liderQuickFilter: s.liderQuickFilter === f ? 'ninguno' : f }));
+  exportTable = () => { /* stub: read-only leadership view */ };
+
+  setLiderSort = (key) => {
+    this.setState(s => ({
+      liderSortKey: key,
+      liderSortDir: s.liderSortKey === key ? (s.liderSortDir === 'asc' ? 'desc' : 'asc') : 'asc',
+    }));
+  };
+
+  parseAltaDate(str) {
+    const monthMap = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
+    const parts = str.trim().split(' ');
+    const day = parseInt(parts[0], 10);
+    const month = monthMap[parts[1]] || 0;
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day).getTime();
+  }
+
+  sortLiderRows(rows, key, dir) {
+    const riskOrder = { Alto: 0, Medio: 1, Bajo: 2 };
+    const sorted = [...rows].sort((a, b) => {
+      let cmp = 0;
+      if (key === 'name') cmp = a.name.localeCompare(b.name);
+      else if (key === 'rp') cmp = a.rp.localeCompare(b.rp);
+      else if (key === 'app') cmp = (b.app ? 1 : 0) - (a.app ? 1 : 0);
+      else if (key === 'sportlab') cmp = (b.sportlab ? 1 : 0) - (a.sportlab ? 1 : 0);
+      else if (key === 'keepgoing') cmp = (b.keepgoing ? 1 : 0) - (a.keepgoing ? 1 : 0);
+      else if (key === 'risk') cmp = riskOrder[a.risk] - riskOrder[b.risk];
+      else if (key === 'altaDate') cmp = this.parseAltaDate(a.altaDate) - this.parseAltaDate(b.altaDate);
+      if (cmp === 0) cmp = a.name.localeCompare(b.name);
+      return dir === 'desc' ? -cmp : cmp;
+    });
+    return sorted;
+  }
+
+  sortHeaderStyle() {
+    return { background: 'none', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0, display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.03em', color: '#948F86', fontWeight: 500 };
+  }
+
+  tabBtnStyle(active) {
+    return { padding: '8px 18px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer', background: active ? '#18181B' : 'transparent', color: active ? '#FFFFFF' : '#57534E', whiteSpace: 'nowrap' };
+  }
+
+  pillBtnStyle(active) {
+    return { padding: '8px 16px', borderRadius: '999px', fontSize: '13px', fontWeight: 500, border: active ? '1px solid #18181B' : '1px solid #E4E1DC', cursor: 'pointer', background: active ? '#18181B' : '#FFFFFF', color: active ? '#FFFFFF' : '#57534E' };
+  }
+
+  renderVals() {
+    const em = this.state.members.map(m => this.enrich(m));
+    const selected = em.find(m => m.id === this.state.selectedMemberId) || em[0];
+
+    // --- RP Dashboard (Andrea Torres) ---
+    const currentRp = 'Andrea Torres';
+    const rpAll = em.filter(m => m.rp === currentRp);
+    const total = rpAll.length;
+    const kpi = (count) => {
+      const pct = total ? Math.round((count / total) * 100) : 0;
+      const color = this.tierColor(pct);
+      return { count, pct, pctLabel: pct + '%', color };
+    };
+    const rpKpis = {
+      encuesta: { count: total },
+      app: kpi(rpAll.filter(m => m.app).length),
+      sportlab: kpi(rpAll.filter(m => m.sportlab).length),
+      keepgoing: kpi(rpAll.filter(m => m.keepgoing).length),
+    };
+
+    const rpFilterDefs = [
+      { id: 'todos', label: 'Todos' },
+      { id: 'sinapp', label: 'Sin APP' },
+      { id: 'sinsportlab', label: 'Sin SPORTLAB' },
+      { id: 'sinkeepgoing', label: 'Sin Keep Going' },
+      { id: 'riesgoalto', label: 'Riesgo alto' },
+    ];
+    const rpFilterOptions = rpFilterDefs.map(f => ({
+      label: f.label,
+      style: this.pillBtnStyle(this.state.rpFilter === f.id),
+      onClick: () => this.setRpFilter(f.id),
+    }));
+
+    let rpFiltered = rpAll;
+    if (this.state.rpFilter === 'sinapp') rpFiltered = rpFiltered.filter(m => !m.app);
+    else if (this.state.rpFilter === 'sinsportlab') rpFiltered = rpFiltered.filter(m => !m.sportlab);
+    else if (this.state.rpFilter === 'sinkeepgoing') rpFiltered = rpFiltered.filter(m => !m.keepgoing);
+    else if (this.state.rpFilter === 'riesgoalto') rpFiltered = rpFiltered.filter(m => m.risk === 'Alto');
+    if (this.state.rpSearch.trim()) {
+      const q = this.state.rpSearch.trim().toLowerCase();
+      rpFiltered = rpFiltered.filter(m => m.name.toLowerCase().includes(q));
+    }
+
+    const rpLimit = 3;
+    const rpVisibleMembers = this.state.rpShowAll ? rpFiltered : rpFiltered.slice(0, rpLimit);
+
+    // --- Vista líder ---
+    const totalAll = em.length;
+    const kpiG = (count) => {
+      const pct = totalAll ? Math.round((count / totalAll) * 100) : 0;
+      return { count, pct, pctLabel: pct + '%', color: this.tierColor(pct) };
+    };
+    const riesgoAltoCount = em.filter(m => m.risk === 'Alto').length;
+    const liderKpis = {
+      app: kpiG(em.filter(m => m.app).length),
+      sportlab: kpiG(em.filter(m => m.sportlab).length),
+      keepgoing: kpiG(em.filter(m => m.keepgoing).length),
+      riesgoAlto: { count: riesgoAltoCount, pctLabel: (totalAll ? Math.round((riesgoAltoCount / totalAll) * 100) : 0) + '%' },
+    };
+
+    const perRep = this.reps.map(name => {
+      const list = em.filter(m => m.rp === name);
+      const n = list.length;
+      const pctOf = (count) => (n ? Math.round((count / n) * 100) : 0);
+      const appPct = pctOf(list.filter(m => m.app).length);
+      const sportlabPct = pctOf(list.filter(m => m.sportlab).length);
+      const keepgoingPct = pctOf(list.filter(m => m.keepgoing).length);
+      return {
+        name, initials: this.initialsOf(name), count: n,
+        appPct, appColor: this.tierColor(appPct), appPctLabel: appPct + '%',
+        sportlabPct, sportlabColor: this.tierColor(sportlabPct), sportlabPctLabel: sportlabPct + '%',
+        keepgoingPct, keepgoingColor: this.tierColor(keepgoingPct), keepgoingPctLabel: keepgoingPct + '%',
+      };
+    });
+
+    const liderRpDefs = ['Todos', ...this.reps];
+    const liderRpFilterOptions = liderRpDefs.map(name => {
+      const id = name === 'Todos' ? 'todos' : name;
+      return { label: name, style: this.pillBtnStyle(this.state.liderRpFilter === id), onClick: () => this.setLiderRpFilter(id) };
+    });
+
+    const liderQuickDefs = [
+      { id: 'riesgoalto', label: 'Riesgo alto' },
+      { id: 'sinkeepgoing', label: 'Sin Keep Going' },
+    ];
+    const liderQuickFilterOptions = liderQuickDefs.map(f => ({
+      label: f.label,
+      style: this.pillBtnStyle(this.state.liderQuickFilter === f.id),
+      onClick: () => this.setLiderQuickFilter(f.id),
+    }));
+
+    let liderFiltered = em;
+    if (this.state.liderSearch.trim()) {
+      const q = this.state.liderSearch.trim().toLowerCase();
+      liderFiltered = liderFiltered.filter(m => m.name.toLowerCase().includes(q));
+    }
+    if (this.state.liderRpFilter !== 'todos') liderFiltered = liderFiltered.filter(m => m.rp === this.state.liderRpFilter);
+    if (this.state.liderQuickFilter === 'riesgoalto') liderFiltered = liderFiltered.filter(m => m.risk === 'Alto');
+    if (this.state.liderQuickFilter === 'sinkeepgoing') liderFiltered = liderFiltered.filter(m => !m.keepgoing);
+
+    liderFiltered = this.sortLiderRows(liderFiltered, this.state.liderSortKey, this.state.liderSortDir);
+
+    const liderColumnDefs = [
+      { key: 'name', label: 'Socio', align: 'left' },
+      { key: 'rp', label: 'RP asignado', align: 'left' },
+      { key: 'app', label: 'APP', align: 'center' },
+      { key: 'sportlab', label: 'SPORTLAB', align: 'center' },
+      { key: 'keepgoing', label: 'KEEP GOING', align: 'center' },
+      { key: 'risk', label: 'Riesgo', align: 'left' },
+      { key: 'altaDate', label: 'Fecha de alta', align: 'left' },
+    ];
+    const liderColumns = liderColumnDefs.map(c => ({
+      label: c.label,
+      thStyle: { textAlign: c.align, padding: '12px 20px', borderBottom: '1px solid #E4E1DC', background: '#FAFAF9' },
+      btnStyle: { ...this.sortHeaderStyle(), justifyContent: c.align === 'center' ? 'center' : 'flex-start', width: '100%' },
+      arrow: this.state.liderSortKey === c.key ? (this.state.liderSortDir === 'asc' ? '▲' : '▼') : '',
+      onClick: () => this.setLiderSort(c.key),
+    }));
+
+    return {
+      isPerfil: this.state.currentScreen === 'perfil',
+      isRp: this.state.currentScreen === 'rpdash',
+      isLider: this.state.currentScreen === 'lider',
+      tabPerfilStyle: this.tabBtnStyle(this.state.currentScreen === 'perfil'),
+      tabRpStyle: this.tabBtnStyle(this.state.currentScreen === 'rpdash'),
+      tabLiderStyle: this.tabBtnStyle(this.state.currentScreen === 'lider'),
+      goToPerfil: () => this.goTo('perfil'),
+      goToRp: () => this.goTo('rpdash'),
+      goToLider: () => this.goTo('lider'),
+
+      selected,
+      perfilSearch: this.state.perfilSearch,
+      onPerfilSearchChange: this.onPerfilSearchChange,
+      showPerfilMatches: this.state.perfilSearch.trim().length > 0,
+      noPerfilMatches: this.state.perfilSearch.trim().length > 0 && em.filter(m => m.name.toLowerCase().includes(this.state.perfilSearch.trim().toLowerCase())).length === 0,
+      perfilSearchMatches: em.filter(m => m.name.toLowerCase().includes(this.state.perfilSearch.trim().toLowerCase())).slice(0, 6).map(m => ({
+        name: m.name, memberNo: m.memberNo, rp: m.rp,
+        select: () => this.setState({ selectedMemberId: m.id, perfilSearch: '' }),
+      })),
+      selAppChipStyle: this.chipStyle(selected.app), selAppIcon: selected.app ? '✓' : '–',
+      selSportlabChipStyle: this.chipStyle(selected.sportlab), selSportlabIcon: selected.sportlab ? '✓' : '–',
+      selKeepgoingChipStyle: this.chipStyle(selected.keepgoing), selKeepgoingIcon: selected.keepgoing ? '✓' : '–',
+      newComment: this.state.newComment,
+      onCommentChange: this.onCommentChange,
+      saveComment: this.saveComment,
+
+      rpName: currentRp,
+      rpInitials: this.initialsOf(currentRp),
+      rpTotal: total,
+      rpKpis,
+      rpSearch: this.state.rpSearch,
+      onRpSearchChange: this.onRpSearchChange,
+      rpFilterOptions,
+      rpVisibleMembers,
+      rpVisibleCount: rpVisibleMembers.length,
+      rpFilteredCount: rpFiltered.length,
+      rpHasMore: !this.state.rpShowAll && rpFiltered.length > rpLimit,
+      toggleRpShowAll: this.toggleRpShowAll,
+
+      liderSucursal: 'Sucursal Naciones Unidas',
+      liderPeriod: 'Julio 2026',
+      liderTotal: totalAll,
+      liderKpis,
+      perRep,
+      liderSearch: this.state.liderSearch,
+      onSearchChange: this.onSearchChange,
+      liderRpFilterOptions,
+      liderQuickFilterOptions,
+      liderColumns,
+      liderFilteredMembers: liderFiltered,
+      liderFilteredCount: liderFiltered.length,
+      exportTable: this.exportTable,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
