@@ -1,0 +1,27 @@
+body {
+  margin: 0;
+  background: #FAFAF9;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  color: #1C1B1A;
+  -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::placeholder {
+  color: #ACA79E;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+}
