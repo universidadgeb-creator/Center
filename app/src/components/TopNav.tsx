@@ -1,7 +1,44 @@
 import { tabBtnStyle } from '../lib/style';
 import type { Screen } from '../App';
 
+type Portal = 'leads' | 'socios' | 'admin' | 'deportes';
+
+const PORTAL_OF: Partial<Record<Screen, Portal>> = {
+  leads: 'leads',
+  lider: 'socios',
+  rpdash: 'socios',
+  perfil: 'socios',
+  capturaSocios: 'admin',
+  capturaSportlab: 'deportes',
+};
+
+const PORTAL_LABEL: Record<Portal, string> = {
+  leads: 'Concentrado · Leads',
+  socios: 'Concentrado · Socios',
+  admin: 'Portal Admin',
+  deportes: 'Portal Deportes',
+};
+
+const PORTAL_TABS: Record<Portal, { screen: Screen; label: string }[]> = {
+  leads: [
+    { screen: 'leads', label: 'Concentrado' },
+  ],
+  socios: [
+    { screen: 'lider', label: 'Concentrado' },
+    { screen: 'rpdash', label: 'Seguimiento por RP' },
+    { screen: 'perfil', label: 'Vista Socio' },
+  ],
+  admin: [
+    { screen: 'capturaSocios', label: 'Captura Socios' },
+  ],
+  deportes: [
+    { screen: 'capturaSportlab', label: 'Captura Sportlab' },
+  ],
+};
+
 export function TopNav({ screen, onChange }: { screen: Screen; onChange: (s: Screen) => void }) {
+  const portal = PORTAL_OF[screen];
+
   return (
     <div
       style={{
@@ -9,24 +46,33 @@ export function TopNav({ screen, onChange }: { screen: Screen; onChange: (s: Scr
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: 24,
-        padding: '0 32px',
-        height: 64,
+        padding: '10px 32px',
+        minHeight: 64,
         background: '#FFFFFF',
         borderBottom: '1px solid #E4E1DC',
         position: 'sticky',
         top: 0,
         zIndex: 20,
+        flexWrap: 'wrap',
+        rowGap: 10,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 170 }}>
+      <div
+        style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 170, cursor: 'pointer' }}
+        onClick={() => onChange('home')}
+      >
         <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.03em', color: '#18181B' }}>VIVO47</span>
-        <span style={{ fontSize: 13, color: '#8B877F' }}>Portal operativo</span>
+        <span style={{ fontSize: 13, color: '#8B877F' }}>{portal ? PORTAL_LABEL[portal] : 'Portal operativo'}</span>
       </div>
-      <div style={{ display: 'flex', gap: 4, background: '#F4F2ED', padding: 4, borderRadius: 9 }}>
-        <button style={tabBtnStyle(screen === 'lider')} onClick={() => onChange('lider')}>Concentrado</button>
-        <button style={tabBtnStyle(screen === 'rpdash')} onClick={() => onChange('rpdash')}>Vista RP</button>
-        <button style={tabBtnStyle(screen === 'perfil')} onClick={() => onChange('perfil')}>Vista Socio</button>
-      </div>
+      {portal && (
+        <div style={{ display: 'flex', gap: 4, background: '#F4F2ED', padding: 4, borderRadius: 9, flexWrap: 'wrap' }}>
+          {PORTAL_TABS[portal].map(tab => (
+            <button key={tab.screen} style={tabBtnStyle(screen === tab.screen)} onClick={() => onChange(tab.screen)}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 170, justifyContent: 'flex-end' }}>
         <div
           style={{

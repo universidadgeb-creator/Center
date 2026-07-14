@@ -147,7 +147,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.app_downloaded)}>{m.app_downloaded ? '✓' : '✕'}</span></td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.sportlab)}>{m.sportlab ? '✓' : '✕'}</span></td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.keepgoing)}>{m.keepgoing ? '✓' : '✕'}</span></td>
-                  <td style={{ padding: '14px 20px' }}><span style={riskBadgeStyle(m.risk)}>{m.risk || 'Sin evaluar'}</span></td>
+                  <td style={{ padding: '14px 20px' }}><span style={riskBadgeStyle(m.risk, m.abandono_score)}>{m.risk || 'Sin evaluar'}</span></td>
                   <td style={{ padding: '14px 20px' }}>
                     <button
                       onClick={() => onViewProfile(m.id)}

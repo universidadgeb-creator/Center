@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { Member } from '../lib/types';
-import { chipStyle, formatDate, initialsOf, riskBadgeStyle } from '../lib/style';
+import { chipStyle, formatDate, initialsOf, riskBadgeStyle, riskScoreColors } from '../lib/style';
 import { getEvaluacion, scoreOrDash } from '../lib/evaluation';
 import { useComments } from '../hooks/useComments';
 
@@ -170,10 +170,10 @@ export function VistaSocio({
 
           <div style={{ ...card, gap: 8 }}>
             <div style={cardLabel}>Riesgo de abandono</div>
-            <div style={{ fontSize: 30, fontWeight: 600, color: '#18181B' }}>
+            <div style={{ fontSize: 30, fontWeight: 600, color: riskScoreColors(evaluacion.riesgo.score).text }}>
               {scoreOrDash(evaluacion.riesgo.score)}<span style={{ fontSize: 15, color: '#ACA79E', fontWeight: 500 }}>/10</span>
             </div>
-            <span style={riskBadgeStyle(selected.risk)}>{selected.risk || 'Sin evaluar'}</span>
+            <span style={riskBadgeStyle(selected.risk, evaluacion.riesgo.score)}>{selected.risk || 'Sin evaluar'}</span>
           </div>
 
           <div style={card}>

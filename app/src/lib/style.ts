@@ -7,15 +7,35 @@ export function initialsOf(name: string): string {
   return initials.toUpperCase() || '?';
 }
 
-export function riskColors(risk: Risk | null | undefined): { bg: string; text: string } {
-  if (risk === 'Alto') return { bg: '#FBEAEA', text: '#B42318' };
-  if (risk === 'Medio') return { bg: '#FDF3DF', text: '#92610A' };
-  if (risk === 'Bajo') return { bg: '#E8F5EC', text: '#1E7A42' };
-  return { bg: '#F1EFEA', text: '#928D85' };
+const RISK_NEUTRAL = { bg: '#F1EFEA', text: '#928D85' };
+const RISK_GREEN = { bg: '#E8F5EC', text: '#1E7A42' };
+const RISK_YELLOW = { bg: '#FDF3DF', text: '#92610A' };
+const RISK_RED = { bg: '#FBEAEA', text: '#B42318' };
+
+/** Score-based palette used everywhere risk is shown: 9-10 verde, 7-8 amarillo, ≤6 rojo. */
+export function riskScoreColors(score: number | null | undefined): { bg: string; text: string } {
+  if (score === null || score === undefined) return RISK_NEUTRAL;
+  if (score >= 9) return RISK_GREEN;
+  if (score >= 7) return RISK_YELLOW;
+  return RISK_RED;
 }
 
-export function riskBadgeStyle(risk: Risk | null | undefined): CSSProperties {
-  const c = riskColors(risk);
+/** Category-only palette, used as a fallback when no numeric score is available. */
+export function riskCategoryColors(risk: Risk | null | undefined): { bg: string; text: string } {
+  if (risk === 'Alto') return RISK_RED;
+  if (risk === 'Medio') return RISK_YELLOW;
+  if (risk === 'Bajo') return RISK_GREEN;
+  return RISK_NEUTRAL;
+}
+
+/** Prefers the numeric abandono_score (9-10 verde · 7-8 amarillo · ≤6 rojo); falls back to the risk category text. */
+export function riskColors(risk: Risk | null | undefined, score?: number | null): { bg: string; text: string } {
+  if (score === null || score === undefined) return riskCategoryColors(risk);
+  return riskScoreColors(score);
+}
+
+export function riskBadgeStyle(risk: Risk | null | undefined, score?: number | null): CSSProperties {
+  const c = riskColors(risk, score);
   return {
     background: c.bg,
     color: c.text,
@@ -108,6 +128,47 @@ export function sortHeaderStyle(): CSSProperties {
     letterSpacing: '0.03em',
     color: '#948F86',
     fontWeight: 500,
+  };
+}
+
+export function captureRowStyle(): CSSProperties {
+  return {
+    background: '#FFFFFF',
+    border: '1px solid #E4E1DC',
+    borderRadius: 10,
+    padding: '16px 20px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    flexWrap: 'wrap',
+  };
+}
+
+export function captureInputStyle(): CSSProperties {
+  return {
+    border: '1px solid #E4E1DC',
+    borderRadius: 8,
+    padding: '10px 14px',
+    fontSize: 14,
+    fontFamily: 'inherit',
+    color: '#2B2926',
+    minWidth: 160,
+    flex: '1 1 160px',
+  };
+}
+
+export function captureToggleStyle(active: boolean): CSSProperties {
+  return {
+    padding: '10px 18px',
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    border: active ? '1px solid #1E7A42' : '1px solid #D9D5CE',
+    background: active ? '#E8F5EC' : '#FFFFFF',
+    color: active ? '#1E7A42' : '#2B2926',
+    whiteSpace: 'nowrap',
   };
 }
 

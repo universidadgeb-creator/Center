@@ -14,6 +14,7 @@ export interface Member {
   app_downloaded: boolean;
   sportlab: boolean;
   keepgoing: boolean;
+  reviewed: boolean;
 
   objetivo: string | null;
   meta90: string | null;
@@ -52,5 +53,43 @@ export interface StaffComment {
 }
 
 export type MemberPatch = Partial<
-  Pick<Member, 'member_no' | 'rp' | 'app_downloaded' | 'sportlab' | 'keepgoing'>
+  Pick<Member, 'member_no' | 'rp' | 'app_downloaded' | 'sportlab' | 'keepgoing' | 'reviewed'>
 >;
+
+export interface Lead {
+  id: string;
+  fecha_asignacion: string;
+  estrategia: string | null;
+  rp: string | null;
+  nombre: string;
+  telefono: string | null;
+  correo: string | null;
+  comentarios: string | null;
+
+  status: string;
+  tour: boolean;
+  fecha_cita: string | null;
+  app_downloaded: boolean;
+
+  fecha_cierre: string | null;
+  member_id: string | null;
+
+  created_at: string;
+  updated_at: string;
+}
+
+export type LeadInsert = Pick<Lead, 'nombre'> &
+  Partial<Pick<Lead, 'telefono' | 'estrategia' | 'rp' | 'fecha_asignacion' | 'comentarios'>>;
+
+export type LeadPatch = Partial<
+  Pick<Lead, 'status' | 'tour' | 'fecha_cita' | 'comentarios' | 'rp' | 'estrategia' | 'telefono' | 'correo' | 'fecha_cierre' | 'app_downloaded' | 'member_id'>
+>;
+
+export interface LeadGoal {
+  id: string;
+  month: string;
+  rp: string;
+  meta_altas: number;
+  created_at: string;
+  updated_at: string;
+}

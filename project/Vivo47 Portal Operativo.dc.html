@@ -22,22 +22,82 @@
 
 <div style="min-height:100vh;background:#FAFAF9;">
 
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding:0 32px;height:64px;background:#FFFFFF;border-bottom:1px solid #E4E1DC;position:sticky;top:0;z-index:20;">
-    <div style="display:flex;align-items:baseline;gap:10px;min-width:170px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;padding:10px 32px;min-height:64px;background:#FFFFFF;border-bottom:1px solid #E4E1DC;position:sticky;top:0;z-index:20;flex-wrap:wrap;row-gap:10px;">
+    <div style="display:flex;align-items:baseline;gap:10px;min-width:170px;cursor:pointer;" onClick="{{ goToHome }}">
       <span style="font-size:18px;font-weight:700;letter-spacing:0.03em;color:#18181B;">VIVO47</span>
-      <span style="font-size:13px;color:#8B877F;">Portal operativo</span>
+      <span style="font-size:13px;color:#8B877F;">{{ portalLabel }}</span>
     </div>
-    <div style="display:flex;gap:4px;background:#F4F2ED;padding:4px;border-radius:9px;">
-      <button style="{{ tabLiderStyle }}" onClick="{{ goToLider }}">Concentrado</button>
-      <button style="{{ tabRpStyle }}" onClick="{{ goToRp }}">Vista RP</button>
-      <button style="{{ tabPerfilStyle }}" onClick="{{ goToPerfil }}">Vista Socio</button>
-    </div>
+    <sc-if value="{{ showPortalTabs }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:4px;background:#F4F2ED;padding:4px;border-radius:9px;flex-wrap:wrap;">
+        <sc-for list="{{ portalTabs }}" as="t" hint-placeholder-count="3">
+          <button style="{{ t.style }}" onClick="{{ t.onClick }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
     <div style="display:flex;align-items:center;gap:8px;min-width:170px;justify-content:flex-end;">
       <div style="width:32px;height:32px;border-radius:999px;background:#EFEDE9;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#57534E;flex:none;">OP</div>
     </div>
   </div>
 
-  <sc-if value="{{ isPerfil }}" hint-placeholder-val="{{ true }}">
+  <!-- ============================= HOME ============================= -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:960px;margin:0 auto;padding:56px 32px;display:flex;flex-direction:column;gap:48px;">
+
+    <div style="text-align:center;">
+      <div style="font-size:26px;font-weight:700;color:#18181B;">VIVO47 — Portal operativo</div>
+      <div style="font-size:14px;color:#8B877F;margin-top:8px;">Elige el panel que corresponde a tu rol.</div>
+    </div>
+
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#18181B;">Leads</div>
+          <div style="font-size:13px;color:#8B877F;margin-top:2px;">Prospectos antes de la venta.</div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <button style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;font-family:inherit;flex:1 1 220px;min-width:200px;" onClick="{{ goToLeads }}">
+            <span style="font-size:15px;font-weight:600;color:#18181B;">Concentrado</span>
+            <span style="font-size:13px;color:#8B877F;line-height:1.4;">Metas por RP, embudo lead → tour → alta, y seguimiento de cada lead.</span>
+          </button>
+        </div>
+      </div>
+
+      <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#18181B;">Socios</div>
+          <div style="font-size:13px;color:#8B877F;margin-top:2px;">Ya convertidos, post-venta.</div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <button style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;font-family:inherit;flex:1 1 220px;min-width:200px;" onClick="{{ goToLider }}">
+            <span style="font-size:15px;font-weight:600;color:#18181B;">Concentrado</span>
+            <span style="font-size:13px;color:#8B877F;line-height:1.4;">Indicadores generales, filtros por mes y panel de socios.</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div>
+        <div style="font-size:15px;font-weight:600;color:#18181B;">Entrada de datos</div>
+        <div style="font-size:13px;color:#8B877F;margin-top:2px;">Captura operativa directa, un panel a la vez.</div>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;">
+        <button style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;font-family:inherit;flex:1 1 220px;min-width:200px;" onClick="{{ goToCapturaSocios }}">
+          <span style="font-size:15px;font-weight:600;color:#18181B;">Portal Admin</span>
+          <span style="font-size:13px;color:#8B877F;line-height:1.4;">Asigna número de socio y RP; vincula leads ganados.</span>
+        </button>
+        <button style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:6px;text-align:left;cursor:pointer;font-family:inherit;flex:1 1 220px;min-width:200px;" onClick="{{ goToCapturaSportlab }}">
+          <span style="font-size:15px;font-weight:600;color:#18181B;">Portal Deportes</span>
+          <span style="font-size:13px;color:#8B877F;line-height:1.4;">Marca SPORTLAB y KEEP GOING.</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <!-- ============================= VISTA SOCIO ============================= -->
+  <sc-if value="{{ isPerfil }}" hint-placeholder-val="{{ false }}">
   <div style="max-width:1180px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:24px;">
 
     <div style="position:relative;display:flex;flex-direction:column;gap:0;">
@@ -110,7 +170,7 @@
 
         <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
           <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Riesgo de abandono</div>
-          <div style="font-size:30px;font-weight:600;color:#18181B;">{{ selected.evaluacion.riesgo.score }}<span style="font-size:15px;color:#ACA79E;font-weight:500;">/10</span></div>
+          <div style="font-size:30px;font-weight:600;color:{{ selected.riskScoreColor }};">{{ selected.evaluacion.riesgo.score }}<span style="font-size:15px;color:#ACA79E;font-weight:500;">/10</span></div>
           <span style="{{ selected.riskBadgeStyle }}">{{ selected.risk }}</span>
         </div>
 
@@ -205,15 +265,21 @@
   </div>
   </sc-if>
 
+  <!-- ============================= SEGUIMIENTO POR RP ============================= -->
   <sc-if value="{{ isRp }}" hint-placeholder-val="{{ false }}">
   <div style="max-width:1180px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:24px;">
 
-    <div style="display:flex;align-items:center;gap:20px;">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
       <div style="width:64px;height:64px;border-radius:999px;background:#EFEDE9;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:#4A4640;flex:none;">{{ rpInitials }}</div>
-      <div>
+      <div style="flex:1;min-width:200px;">
         <div style="font-size:22px;font-weight:600;color:#18181B;">{{ rpName }}</div>
         <div style="font-size:13px;color:#8B877F;">{{ rpTotal }} socios asignados</div>
       </div>
+      <select style="border:1px solid #E4E1DC;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:#2B2926;background:#fff;" value="{{ currentRp }}" onChange="{{ onCurrentRpChange }}">
+        <sc-for list="{{ reps }}" as="r" hint-placeholder-count="3">
+          <option value="{{ r }}">{{ r }}</option>
+        </sc-for>
+      </select>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
@@ -303,17 +369,26 @@
   </div>
   </sc-if>
 
+  <!-- ============================= CONCENTRADO · SOCIOS ============================= -->
   <sc-if value="{{ isLider }}" hint-placeholder-val="{{ false }}">
   <div style="max-width:1280px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:24px;">
 
     <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <div>
         <div style="font-size:22px;font-weight:600;color:#18181B;">Panel general</div>
-        <div style="font-size:13px;color:#8B877F;margin-top:4px;">{{ liderSucursal }} · {{ liderPeriod }}</div>
+        <div style="font-size:13px;color:#8B877F;margin-top:4px;">Sucursal Naciones Unidas · {{ liderScopeLabel }}</div>
       </div>
-      <div style="text-align:right;">
-        <div style="font-size:26px;font-weight:600;color:#18181B;">{{ liderTotal }}</div>
-        <div style="font-size:12px;color:#8B877F;">socios activos</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="text-align:right;">
+          <div style="font-size:26px;font-weight:600;color:#18181B;">{{ liderTotal }}</div>
+          <div style="font-size:12px;color:#8B877F;">socios activos</div>
+        </div>
+        <select style="border:1px solid #E4E1DC;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:#2B2926;background:#fff;" value="{{ liderMonth }}" onChange="{{ onLiderMonthChange }}">
+          <option value="todos">General (todos los meses)</option>
+          <sc-for list="{{ liderMonths }}" as="mo" hint-placeholder-count="2">
+            <option value="{{ mo.key }}">{{ mo.label }}</option>
+          </sc-for>
+        </select>
       </div>
     </div>
 
@@ -350,34 +425,61 @@
           <span style="font-size:13px;font-weight:600;color:#B42318;">{{ liderKpis.riesgoAlto.pctLabel }}</span>
         </div>
       </div>
+      <div style="background:#FDF3DF;border:1px solid #F3E1B8;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#92610A;">Pendientes de revisión</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:24px;font-weight:600;color:#92610A;">{{ liderKpis.pendientes.count }}</span>
+          <span style="font-size:13px;font-weight:600;color:#92610A;">{{ liderKpis.pendientes.pctLabel }}</span>
+        </div>
+      </div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div style="font-size:15px;font-weight:600;color:#18181B;">Por representante</div>
+      <div style="font-size:15px;font-weight:600;color:#18181B;">Indicadores generales</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
-        <sc-for list="{{ perRep }}" as="rep" hint-placeholder-count="3">
-          <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:16px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:40px;height:40px;border-radius:999px;background:#EFEDE9;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#4A4640;flex:none;">{{ rep.initials }}</div>
-              <div>
-                <div style="font-size:14px;font-weight:600;color:#18181B;">{{ rep.name }}</div>
-                <div style="font-size:12px;color:#8B877F;">{{ rep.count }} socios</div>
-              </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Distribución por género</div>
+          <sc-for list="{{ liderGeneroStats }}" as="g" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>{{ g.label }}</span><span style="font-weight:600;color:{{ g.color }};">{{ g.count }} · {{ g.pct }}%</span></div>
+              <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ g.color }};width:{{ g.pct }}%;"></div></div>
             </div>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-              <div style="display:flex;flex-direction:column;gap:4px;">
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>APP</span><span style="font-weight:600;color:{{ rep.appColor }};">{{ rep.appPctLabel }}</span></div>
-                <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rep.appColor }};width:{{ rep.appPct }}%;"></div></div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:4px;">
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>SPORTLAB</span><span style="font-weight:600;color:{{ rep.sportlabColor }};">{{ rep.sportlabPctLabel }}</span></div>
-                <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rep.sportlabColor }};width:{{ rep.sportlabPct }}%;"></div></div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:4px;">
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>KEEP GOING</span><span style="font-weight:600;color:{{ rep.keepgoingColor }};">{{ rep.keepgoingPctLabel }}</span></div>
-                <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rep.keepgoingColor }};width:{{ rep.keepgoingPct }}%;"></div></div>
-              </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Distribución de edades</div>
+          <sc-for list="{{ liderEdadStats }}" as="a" hint-placeholder-count="5">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>{{ a.label }}</span><span style="font-weight:600;color:{{ a.color }};">{{ a.count }} · {{ a.pct }}%</span></div>
+              <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ a.color }};width:{{ a.pct }}%;"></div></div>
             </div>
+          </sc-for>
+        </div>
+
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px;">
+          <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Distribución de riesgo</div>
+          <sc-for list="{{ liderRiesgoStats }}" as="rk" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>{{ rk.label }}</span><span style="font-weight:600;color:{{ rk.color }};">{{ rk.count }} · {{ rk.pct }}%</span></div>
+              <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:{{ rk.color }};width:{{ rk.pct }}%;"></div></div>
+            </div>
+          </sc-for>
+        </div>
+
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;">
+        <sc-for list="{{ liderJklCards }}" as="jkl" hint-placeholder-count="3">
+          <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px;">
+            <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">{{ jkl.title }}</div>
+            <sc-for list="{{ jkl.items }}" as="it" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6E6A64;"><span>{{ it.label }}</span><span style="font-weight:600;color:#57534E;">{{ it.count }} · {{ it.pct }}%</span></div>
+                <div style="height:6px;border-radius:999px;background:#EEEBE5;overflow:hidden;"><div style="height:100%;background:#57534E;width:{{ it.pct }}%;"></div></div>
+              </div>
+            </sc-for>
           </div>
         </sc-for>
       </div>
@@ -391,7 +493,7 @@
         </sc-for>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <sc-for list="{{ liderQuickFilterOptions }}" as="f" hint-placeholder-count="2">
+        <sc-for list="{{ liderQuickFilterOptions }}" as="f" hint-placeholder-count="4">
           <button style="{{ f.style }}" onClick="{{ f.onClick }}">{{ f.label }}</button>
         </sc-for>
       </div>
@@ -402,7 +504,7 @@
         <table style="width:100%;font-size:14px;">
           <thead>
             <tr style="background:#FAFAF9;">
-              <sc-for list="{{ liderColumns }}" as="col" hint-placeholder-count="7">
+              <sc-for list="{{ liderColumns }}" as="col" hint-placeholder-count="8">
                 <th style="{{ col.thStyle }}">
                   <button style="{{ col.btnStyle }}" onClick="{{ col.onClick }}">{{ col.label }}<span>{{ col.arrow }}</span></button>
                 </th>
@@ -414,31 +516,236 @@
               <tr style="border-bottom:1px solid #EEEBE5;">
                 <td style="padding:14px 20px;">
                   <div style="display:flex;flex-direction:column;gap:2px;">
-                    <span style="font-weight:600;color:#2B2926;">{{ m.name }}</span>
+                    <span style="font-weight:600;color:#2B2926;cursor:pointer;" onClick="{{ m.viewProfile }}">{{ m.name }}</span>
                     <span style="font-size:12px;color:#8B877F;">{{ m.memberNo }}</span>
                   </div>
                 </td>
-                <td style="padding:8px 20px;">
-                  <select style="border:1px solid #E4E1DC;border-radius:7px;padding:6px 8px;font-size:13px;font-family:inherit;color:#2B2926;background:#fff;" value="{{ m.rp }}" onChange="{{ m.onRpChange }}">
-                    <option value="Andrea Torres">Andrea Torres</option>
-                    <option value="Mauricio Delgado">Mauricio Delgado</option>
-                    <option value="Fernanda López">Fernanda López</option>
-                  </select>
-                </td>
-                <td style="padding:14px 20px;text-align:center;"><button style="{{ m.appCheckButtonStyle }}" onClick="{{ m.appToggle }}">{{ m.appCheck }}</button></td>
-                <td style="padding:14px 20px;text-align:center;"><button style="{{ m.sportlabCheckButtonStyle }}" onClick="{{ m.sportlabToggle }}">{{ m.sportlabCheck }}</button></td>
-                <td style="padding:14px 20px;text-align:center;"><button style="{{ m.keepgoingCheckButtonStyle }}" onClick="{{ m.keepgoingToggle }}">{{ m.keepgoingCheck }}</button></td>
+                <td style="padding:14px 20px;color:#4A4640;">{{ m.rp }}</td>
+                <td style="padding:14px 20px;text-align:center;"><span style="{{ m.appCheckStyle }}">{{ m.appCheck }}</span></td>
+                <td style="padding:14px 20px;text-align:center;"><span style="{{ m.sportlabCheckStyle }}">{{ m.sportlabCheck }}</span></td>
+                <td style="padding:14px 20px;text-align:center;"><span style="{{ m.keepgoingCheckStyle }}">{{ m.keepgoingCheck }}</span></td>
                 <td style="padding:14px 20px;"><span style="{{ m.riskBadgeStyle }}">{{ m.risk }}</span></td>
+                <td style="padding:14px 20px;text-align:center;"><span style="{{ m.estadoBadgeStyle }}">{{ m.estadoLabel }}</span></td>
                 <td style="padding:14px 20px;color:#4A4640;">{{ m.altaDate }}</td>
               </tr>
             </sc-for>
           </tbody>
         </table>
       </div>
-      <div style="padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #E4E1DC;font-size:13px;color:#8B877F;">
+      <div style="padding:14px 20px;border-top:1px solid #E4E1DC;font-size:13px;color:#8B877F;">
         <span>Mostrando {{ liderFilteredCount }} de {{ liderTotal }} socios</span>
-        <button style="background:none;border:1px solid #D9D5CE;padding:6px 14px;border-radius:7px;font-size:13px;color:#2B2926;cursor:pointer;" onClick="{{ exportTable }}">Exportar tabla</button>
       </div>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <!-- ============================= CONCENTRADO · LEADS ============================= -->
+  <sc-if value="{{ isLeads }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:960px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:24px;">
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div style="font-size:22px;font-weight:600;color:#18181B;">Concentrado · Leads</div>
+        <div style="font-size:13px;color:#8B877F;margin-top:4px;">Metas, avance y seguimiento de la operación de leads.</div>
+      </div>
+      <select style="border:1px solid #E4E1DC;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:#2B2926;background:#fff;" value="{{ leadsMonth }}" onChange="{{ onLeadsMonthChange }}">
+        <option value="todos">General (todos los meses)</option>
+        <sc-for list="{{ leadsMonths }}" as="mo" hint-placeholder-count="2">
+          <option value="{{ mo.key }}">{{ mo.label }}</option>
+        </sc-for>
+      </select>
+    </div>
+
+    <sc-if value="{{ leadsMonthIsTodos }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:16px 20px;font-size:13px;color:#8B877F;">
+        Selecciona un mes específico para definir y ver metas por RP.
+      </div>
+    </sc-if>
+    <sc-if value="{{ leadsMonthHasGoals }}" hint-placeholder-val="{{ true }}">
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Metas de altas · {{ leadsMonthLabel }}</div>
+        <sc-for list="{{ leadsGoalRows }}" as="gr" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;">
+            <div style="font-size:13px;font-weight:600;color:#2B2926;">{{ gr.label }}</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;color:#8B877F;">Meta</span>
+              <input type="number" min="0" style="width:70px;border:1px solid #E4E1DC;border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;color:#2B2926;" value="{{ gr.meta }}" onChange="{{ gr.onMetaChange }}"></input>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:6px;min-width:110px;justify-content:flex-end;">
+              <span style="font-size:15px;font-weight:600;color:#18181B;">{{ gr.real }}</span>
+              <span style="font-size:12px;font-weight:600;color:{{ gr.color }};">{{ gr.pct }}%</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">Leads totales</div>
+        <div style="font-size:26px;font-weight:600;color:#18181B;">{{ leadsTotal }}</div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">% Lead → Tour</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:24px;font-weight:600;color:#18181B;">{{ leadsTourCount }}</span>
+          <span style="font-size:13px;font-weight:600;color:{{ leadsTourColor }};">{{ leadsTourPct }}%</span>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:#948F86;">% Tour → Alta</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <span style="font-size:24px;font-weight:600;color:#18181B;">{{ leadsVentaCount }}</span>
+          <span style="font-size:13px;font-weight:600;color:{{ leadsVentaColor }};">{{ leadsVentaPct }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div style="font-size:15px;font-weight:600;color:#18181B;">Seguimiento de leads</div>
+      <button style="background:#18181B;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;" onClick="{{ toggleLeadsForm }}">{{ leadsFormBtnLabel }}</button>
+    </div>
+
+    <sc-if value="{{ leadsShowForm }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:14px;font-weight:600;color:#18181B;">Nuevo lead</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input type="text" placeholder="Nombre*" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ newLeadNombre }}" onChange="{{ onNewLeadNombreChange }}"></input>
+          <input type="text" placeholder="Teléfono" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ newLeadTelefono }}" onChange="{{ onNewLeadTelefonoChange }}"></input>
+          <select style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ newLeadEstrategia }}" onChange="{{ onNewLeadEstrategiaChange }}">
+            <option value="">Estrategia…</option>
+            <sc-for list="{{ estrategiaOptions }}" as="e" hint-placeholder-count="4">
+              <option value="{{ e }}">{{ e }}</option>
+            </sc-for>
+          </select>
+          <input type="text" placeholder="RP asignado" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ newLeadRp }}" onChange="{{ onNewLeadRpChange }}"></input>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button style="{{ newLeadSaveBtnStyle }}" onClick="{{ saveNewLead }}">Guardar lead</button>
+          <button style="background:none;border:1px solid #D9D5CE;padding:10px 20px;border-radius:8px;font-size:13px;color:#2B2926;cursor:pointer;" onClick="{{ toggleLeadsForm }}">Cancelar</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <input type="text" placeholder="Buscar lead por nombre…" style="border:1px solid #E4E1DC;border-radius:8px;padding:12px 16px;font-size:15px;font-family:inherit;color:#2B2926;" value="{{ leadsSearch }}" onChange="{{ onLeadsSearchChange }}"></input>
+
+    <div style="display:flex;gap:8px;">
+      <button style="{{ leadsTabProcesoStyle }}" onClick="{{ setLeadsTabProceso }}">En proceso ({{ leadsEnProcesoCount }})</button>
+      <button style="{{ leadsTabCerradosStyle }}" onClick="{{ setLeadsTabCerrados }}">Cerrados ({{ leadsCerradosCount }})</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <sc-if value="{{ leadsListEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:32px;text-align:center;color:#8B877F;font-size:14px;">{{ leadsEmptyMessage }}</div>
+      </sc-if>
+      <sc-for list="{{ leadsVisible }}" as="l" hint-placeholder-count="4">
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="font-weight:600;color:#2B2926;">{{ l.nombre }}</div>
+              <div style="font-size:12px;color:#8B877F;">{{ l.telefono }} · {{ l.estrategia }} · {{ l.rp }} · Asignado: {{ l.fechaAsignacion }}</div>
+            </div>
+            <div style="display:flex;gap:14px;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#57534E;">
+                <input type="checkbox" checked="{{ l.tour }}" onChange="{{ l.onTourChange }}"></input>
+                Tomó tour
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#57534E;">
+                <input type="checkbox" checked="{{ l.appDownloaded }}" onChange="{{ l.onAppChange }}"></input>
+                APP descargada
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <select style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ l.status }}" onChange="{{ l.onStatusChange }}">
+              <sc-for list="{{ statusOptions }}" as="s" hint-placeholder-count="6">
+                <option value="{{ s }}">{{ s }}</option>
+              </sc-for>
+            </select>
+            <input type="date" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ l.fechaCita }}" onChange="{{ l.onFechaCitaChange }}"></input>
+            <input type="text" placeholder="Comentarios…" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:2 1 240px;" value="{{ l.comentarios }}" onChange="{{ l.onComentariosChange }}"></input>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <!-- ============================= PORTAL ADMIN · CAPTURA SOCIOS ============================= -->
+  <sc-if value="{{ isCapturaSocios }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:900px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:20px;">
+
+    <div>
+      <div style="font-size:22px;font-weight:600;color:#18181B;">Captura de socio y RP</div>
+      <div style="font-size:13px;color:#8B877F;margin-top:4px;">Asigna el número de socio y el RP a cada nuevo registro del formulario.</div>
+    </div>
+
+    <input type="text" placeholder="Buscar socio por nombre…" style="border:1px solid #E4E1DC;border-radius:8px;padding:12px 16px;font-size:15px;font-family:inherit;color:#2B2926;" value="{{ csSearch }}" onChange="{{ onCsSearchChange }}"></input>
+
+    <div style="display:flex;gap:8px;">
+      <button style="{{ csTabPendientesStyle }}" onClick="{{ setCsTabPendientes }}">Pendientes ({{ csPendientesCount }})</button>
+      <button style="{{ csTabCompletosStyle }}" onClick="{{ setCsTabCompletos }}">Completos ({{ csCompletosCount }})</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <sc-if value="{{ csListEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:32px;text-align:center;color:#8B877F;font-size:14px;">{{ csEmptyMessage }}</div>
+      </sc-if>
+      <sc-for list="{{ csVisible }}" as="m" hint-placeholder-count="3">
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="flex:2 1 200px;min-width:180px;">
+            <div style="font-weight:600;color:#2B2926;">{{ m.name }}</div>
+            <div style="font-size:12px;color:#8B877F;">Alta: {{ m.altaDate }}</div>
+          </div>
+          <input type="text" placeholder="No. de socio" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ m.memberNo }}" onChange="{{ m.onMemberNoChange }}"></input>
+          <input type="text" placeholder="RP asignado" style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="{{ m.rp }}" onChange="{{ m.onRpChange }}"></input>
+          <select style="border:1px solid #E4E1DC;border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;color:#2B2926;min-width:160px;flex:1 1 160px;" value="" onChange="{{ m.onLinkLead }}">
+            <option value="">Vincular con lead ganado…</option>
+            <sc-for list="{{ unlinkedWonLeads }}" as="l" hint-placeholder-count="2">
+              <option value="{{ l.id }}">{{ l.nombre }} · {{ l.rp }}</option>
+            </sc-for>
+          </select>
+        </div>
+      </sc-for>
+    </div>
+
+  </div>
+  </sc-if>
+
+  <!-- ============================= PORTAL DEPORTES · CAPTURA SPORTLAB ============================= -->
+  <sc-if value="{{ isCapturaSportlab }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:900px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:20px;">
+
+    <div>
+      <div style="font-size:22px;font-weight:600;color:#18181B;">Captura de SPORTLAB y KEEP GOING</div>
+      <div style="font-size:13px;color:#8B877F;margin-top:4px;">Marca la asistencia a SPORTLAB y la inscripción a KEEP GOING de cada socio.</div>
+    </div>
+
+    <input type="text" placeholder="Buscar socio por nombre…" style="border:1px solid #E4E1DC;border-radius:8px;padding:12px 16px;font-size:15px;font-family:inherit;color:#2B2926;" value="{{ cdSearch }}" onChange="{{ onCdSearchChange }}"></input>
+
+    <div style="display:flex;gap:8px;">
+      <button style="{{ cdTabPendientesStyle }}" onClick="{{ setCdTabPendientes }}">Pendientes ({{ cdPendientesCount }})</button>
+      <button style="{{ cdTabCompletosStyle }}" onClick="{{ setCdTabCompletos }}">Completos ({{ cdCompletosCount }})</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <sc-if value="{{ cdListEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:32px;text-align:center;color:#8B877F;font-size:14px;">{{ cdEmptyMessage }}</div>
+      </sc-if>
+      <sc-for list="{{ cdVisible }}" as="m" hint-placeholder-count="3">
+        <div style="background:#FFFFFF;border:1px solid #E4E1DC;border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="flex:2 1 200px;min-width:180px;">
+            <div style="font-weight:600;color:#2B2926;">{{ m.name }}</div>
+            <div style="font-size:12px;color:#8B877F;">{{ m.memberNo }} · {{ m.rp }}</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button style="{{ m.sportlabToggleStyle }}" onClick="{{ m.sportlabToggle }}">{{ m.sportlabLabel }}</button>
+            <button style="{{ m.keepgoingToggleStyle }}" onClick="{{ m.keepgoingToggle }}">{{ m.keepgoingLabel }}</button>
+          </div>
+        </div>
+      </sc-for>
     </div>
 
   </div>
@@ -451,23 +758,40 @@
 class Component extends DCLogic {
 
   members = [
-    {id:1, name:'Diego Hernández Ramos', memberNo:'#047', altaDate:'12 jun 2026', rp:'Andrea Torres', phone:'33 4521 8890', app:true, sportlab:true, keepgoing:false, risk:'Medio'},
-    {id:2, name:'Karla Jiménez Solís', memberNo:'#048', altaDate:'15 jun 2026', rp:'Andrea Torres', phone:'33 2210 7734', app:true, sportlab:false, keepgoing:false, risk:'Alto'},
-    {id:3, name:'Roberto Cabrera Ortiz', memberNo:'#049', altaDate:'18 jun 2026', rp:'Andrea Torres', phone:'33 5567 1123', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
-    {id:4, name:'Paulina Reyes Duarte', memberNo:'#050', altaDate:'20 jun 2026', rp:'Andrea Torres', phone:'33 1298 4456', app:false, sportlab:false, keepgoing:false, risk:'Alto'},
-    {id:5, name:'Luis Fernando Aceves', memberNo:'#051', altaDate:'22 jun 2026', rp:'Andrea Torres', phone:'33 4432 9081', app:true, sportlab:true, keepgoing:false, risk:'Medio'},
-    {id:6, name:'Marisol Camacho Vega', memberNo:'#052', altaDate:'10 jun 2026', rp:'Mauricio Delgado', phone:'33 6690 2245', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
-    {id:7, name:'Emilio Santos Rivera', memberNo:'#053', altaDate:'11 jun 2026', rp:'Mauricio Delgado', phone:'33 3321 8867', app:false, sportlab:false, keepgoing:false, risk:'Alto'},
-    {id:8, name:'Daniela Ponce Aguilar', memberNo:'#054', altaDate:'14 jun 2026', rp:'Mauricio Delgado', phone:'33 7723 1190', app:true, sportlab:false, keepgoing:false, risk:'Medio'},
-    {id:9, name:'Jorge Alberto Nuño', memberNo:'#055', altaDate:'17 jun 2026', rp:'Mauricio Delgado', phone:'33 9081 4432', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
-    {id:10, name:'Ximena Padilla Cortés', memberNo:'#056', altaDate:'19 jun 2026', rp:'Mauricio Delgado', phone:'33 5544 6620', app:false, sportlab:true, keepgoing:false, risk:'Medio'},
-    {id:11, name:'Alejandro Villaseñor', memberNo:'#057', altaDate:'09 jun 2026', rp:'Fernanda López', phone:'33 2287 9034', app:true, sportlab:true, keepgoing:false, risk:'Bajo'},
-    {id:12, name:'Renata Ibarra Solís', memberNo:'#058', altaDate:'13 jun 2026', rp:'Fernanda López', phone:'33 6612 3390', app:false, sportlab:false, keepgoing:false, risk:'Alto'},
-    {id:13, name:'Sebastián Ochoa Mena', memberNo:'#059', altaDate:'16 jun 2026', rp:'Fernanda López', phone:'33 4409 8871', app:true, sportlab:false, keepgoing:true, risk:'Medio'},
-    {id:14, name:'Gabriela Montes Cid', memberNo:'#060', altaDate:'21 jun 2026', rp:'Fernanda López', phone:'33 8890 2214', app:true, sportlab:true, keepgoing:true, risk:'Bajo'},
+    {id:1, name:'Diego Hernández Ramos', memberNo:'#047', altaMonth:'2026-06', altaDate:'12 jun 2026', rp:'Andrea Torres', phone:'33 4521 8890', app:true, sportlab:true, keepgoing:false, risk:'Medio', gender:'Hombre', age:29, reviewed:true},
+    {id:2, name:'Karla Jiménez Solís', memberNo:'#048', altaMonth:'2026-06', altaDate:'15 jun 2026', rp:'Andrea Torres', phone:'33 2210 7734', app:true, sportlab:false, keepgoing:false, risk:'Alto', gender:'Mujer', age:34, reviewed:false},
+    {id:3, name:'Roberto Cabrera Ortiz', memberNo:'#049', altaMonth:'2026-06', altaDate:'18 jun 2026', rp:'Andrea Torres', phone:'33 5567 1123', app:true, sportlab:true, keepgoing:true, risk:'Bajo', gender:'Hombre', age:41, reviewed:true},
+    {id:4, name:'Paulina Reyes Duarte', memberNo:'', altaMonth:'2026-06', altaDate:'20 jun 2026', rp:'', phone:'33 1298 4456', app:false, sportlab:false, keepgoing:false, risk:'Alto', gender:'Mujer', age:26, reviewed:false},
+    {id:5, name:'Luis Fernando Aceves', memberNo:'#051', altaMonth:'2026-06', altaDate:'22 jun 2026', rp:'Andrea Torres', phone:'33 4432 9081', app:true, sportlab:true, keepgoing:false, risk:'Medio', gender:'Hombre', age:23, reviewed:true},
+    {id:6, name:'Marisol Camacho Vega', memberNo:'#052', altaMonth:'2026-07', altaDate:'10 jul 2026', rp:'Mauricio Delgado', phone:'33 6690 2245', app:true, sportlab:true, keepgoing:true, risk:'Bajo', gender:'Mujer', age:38, reviewed:true},
+    {id:7, name:'Emilio Santos Rivera', memberNo:'#053', altaMonth:'2026-07', altaDate:'11 jul 2026', rp:'Mauricio Delgado', phone:'33 3321 8867', app:false, sportlab:false, keepgoing:false, risk:'Alto', gender:'Hombre', age:45, reviewed:false},
+    {id:8, name:'Daniela Ponce Aguilar', memberNo:'', altaMonth:'2026-07', altaDate:'14 jul 2026', rp:'', phone:'33 7723 1190', app:true, sportlab:false, keepgoing:false, risk:'Medio', gender:'Mujer', age:31, reviewed:false},
+    {id:9, name:'Jorge Alberto Nuño', memberNo:'#055', altaMonth:'2026-07', altaDate:'17 jul 2026', rp:'Mauricio Delgado', phone:'33 9081 4432', app:true, sportlab:true, keepgoing:true, risk:'Bajo', gender:'Hombre', age:27, reviewed:true},
+    {id:10, name:'Ximena Padilla Cortés', memberNo:'#056', altaMonth:'2026-07', altaDate:'19 jul 2026', rp:'Mauricio Delgado', phone:'33 5544 6620', app:false, sportlab:true, keepgoing:false, risk:'Medio', gender:'Mujer', age:36, reviewed:true},
+    {id:11, name:'Alejandro Villaseñor', memberNo:'#057', altaMonth:'2026-06', altaDate:'09 jun 2026', rp:'Fernanda López', phone:'33 2287 9034', app:true, sportlab:true, keepgoing:false, risk:'Bajo', gender:'Hombre', age:33, reviewed:true},
+    {id:12, name:'Renata Ibarra Solís', memberNo:'#058', altaMonth:'2026-06', altaDate:'13 jun 2026', rp:'Fernanda López', phone:'33 6612 3390', app:false, sportlab:false, keepgoing:false, risk:'Alto', gender:'Mujer', age:24, reviewed:false},
+    {id:13, name:'Sebastián Ochoa Mena', memberNo:'#059', altaMonth:'2026-07', altaDate:'16 jul 2026', rp:'Fernanda López', phone:'33 4409 8871', app:true, sportlab:false, keepgoing:true, risk:'Medio', gender:'Hombre', age:40, reviewed:true},
+    {id:14, name:'Gabriela Montes Cid', memberNo:'#060', altaMonth:'2026-07', altaDate:'21 jul 2026', rp:'Fernanda López', phone:'33 8890 2214', app:true, sportlab:true, keepgoing:true, risk:'Bajo', gender:'Mujer', age:30, reviewed:true},
   ];
 
   reps = ['Andrea Torres', 'Mauricio Delgado', 'Fernanda López'];
+
+  leadsSeed = [
+    {id:'l1', fechaAsignacion:'2026-07-02', estrategia:'FB', rp:'Andrea Torres', nombre:'Juan Hernández Cota', telefono:'33 1122 3344', comentarios:'', status:'50% Cita', tour:false, fechaCita:'2026-07-14', appDownloaded:false, memberId:null},
+    {id:'l2', fechaAsignacion:'2026-07-03', estrategia:'IG', rp:'Mauricio Delgado', nombre:'Albert Ramírez', telefono:'32 3787 0586', comentarios:'', status:'10% Contactado', tour:false, fechaCita:'', appDownloaded:false, memberId:null},
+    {id:'l3', fechaAsignacion:'2026-07-05', estrategia:'RECOMENDADO', rp:'Fernanda López', nombre:'Cynthia Bravo', telefono:'33 5566 7788', comentarios:'Quedó de confirmar cita.', status:'60% Tour/Precio', tour:true, fechaCita:'2026-07-10', appDownloaded:true, memberId:null},
+    {id:'l4', fechaAsignacion:'2026-07-06', estrategia:'WHATSAPP', rp:'Andrea Torres', nombre:'Marco Villegas', telefono:'33 9988 7766', comentarios:'', status:'100% Venta', tour:true, fechaCita:'2026-07-08', appDownloaded:true, memberId:null},
+    {id:'l5', fechaAsignacion:'2026-07-08', estrategia:'FB', rp:'Mauricio Delgado', nombre:'Paola Reséndiz', telefono:'33 1234 5566', comentarios:'', status:'0% No le interesa', tour:false, fechaCita:'', appDownloaded:false, memberId:null},
+    {id:'l6', fechaAsignacion:'2026-06-20', estrategia:'REACTIVACION', rp:'Fernanda López', nombre:'Iván Torres Nuño', telefono:'33 4455 6677', comentarios:'', status:'100% Venta', tour:true, fechaCita:'2026-06-24', appDownloaded:true, memberId:null},
+    {id:'l7', fechaAsignacion:'2026-06-22', estrategia:'ESPECTACULAR', rp:'Andrea Torres', nombre:'Lorena Casillas', telefono:'33 7788 9900', comentarios:'', status:'Nunca contestó', tour:false, fechaCita:'', appDownloaded:false, memberId:null},
+    {id:'l8', fechaAsignacion:'2026-07-11', estrategia:'PAGINA WEB', rp:'', nombre:'Ricardo Peña', telefono:'', comentarios:'', status:'Nuevo', tour:false, fechaCita:'', appDownloaded:false, memberId:null},
+  ];
+
+  goalsSeed = { '2026-07|': 30, '2026-07|Andrea Torres': 10, '2026-07|Mauricio Delgado': 10, '2026-07|Fernanda López': 10 };
+
+  statusOptions = ['Nuevo','10% Contactado','20% Contactado con respuesta','50% Cita','50% Reprogramar cita','60% Tour/Precio','80% Por confirmar','100% Venta','0% No le interesa','Nunca contestó','No existe','Llamar después','Pase invitado Easy Fit','Tiene total pass','Lead de renovación'];
+  closedStatuses = ['100% Venta', '0% No le interesa', 'No existe', 'Tiene total pass'];
+  estrategiaOptions = ['FB','IG','WHATSAPP','RECOMENDADO','REACTIVACION','VENTAS CORPORATIVAS','ESPECTACULAR','PAGINA WEB','PASE DE INVITADO','VALLA MOVIL','VOLANTEO'];
 
   baseComments = {
     1: [
@@ -494,30 +818,63 @@ class Component extends DCLogic {
   notaFuturoPool = ['En unos meses vas a agradecer no haberte rendido. Cada sesión cuenta, aunque no lo sientas todavía.','No busques ser perfecto, busca ser constante. Eso es lo que te va a cambiar.','El cuerpo que quieres se construye con los días en que no tenías ganas y fuiste de todos modos.','Confía en el proceso, los resultados llegan cuando menos los esperas.','Cada entrenamiento es un voto por la persona que quieres ser.'];
   momentosPool = ['Ya has llegado más lejos de lo que crees. Un mal día no borra el progreso de tres meses.','Esto es temporal, tu esfuerzo no. Sigue un paso a la vez.','Recuerda por qué empezaste. Eso no ha cambiado.','No tienes que sentirte motivado para entrenar, solo tienes que empezar.','Lo difícil de hoy es lo que te hace más fuerte mañana.'];
 
+  monthNames = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
   state = {
-    currentScreen: 'perfil',
+    currentScreen: 'home',
     selectedMemberId: 1,
     newComment: '',
     extraComments: {},
+
+    currentRp: 'Andrea Torres',
     rpFilter: 'todos',
     rpSearch: '',
     rpShowAll: false,
+
+    liderMonth: 'todos',
     liderSearch: '',
     liderRpFilter: 'todos',
     liderQuickFilter: 'ninguno',
-    perfilSearch: '',
-    members: null,
     liderSortKey: 'risk',
     liderSortDir: 'asc',
+
+    perfilSearch: '',
+
+    leadsMonth: '2026-07',
+    leadsSearch: '',
+    leadsTab: 'proceso',
+    leadsShowForm: false,
+    newLeadNombre: '', newLeadTelefono: '', newLeadEstrategia: '', newLeadRp: '',
+
+    csSearch: '', csTab: 'pendientes',
+    cdSearch: '', cdTab: 'pendientes',
+
+    members: null,
+    leads: null,
+    goals: null,
   };
 
   constructor(props) {
     super(props);
     this.state.members = this.members.map(m => ({ ...m }));
+    this.state.leads = this.leadsSeed.map(l => ({ ...l }));
+    this.state.goals = { ...this.goalsSeed };
   }
+
+  goTo = (screen, memberId) => {
+    this.setState(s => ({ currentScreen: screen, selectedMemberId: memberId != null ? memberId : s.selectedMemberId }));
+  };
+  goToHome = () => this.goTo('home');
+  goToLeads = () => this.goTo('leads');
+  goToLider = () => this.goTo('lider');
+  goToCapturaSocios = () => this.goTo('capturaSocios');
+  goToCapturaSportlab = () => this.goTo('capturaSportlab');
+  goToPerfil = () => this.goTo('perfil');
+  goToRpDash = () => this.goTo('rpdash');
 
   onPerfilSearchChange = (e) => this.setState({ perfilSearch: e.target.value });
   onRpSearchChange = (e) => this.setState({ rpSearch: e.target.value });
+  onCurrentRpChange = (e) => this.setState({ currentRp: e.target.value, rpShowAll: false });
 
   updateMember = (id, patch) => {
     this.setState(s => ({ members: s.members.map(m => m.id === id ? { ...m, ...patch } : m) }));
@@ -525,26 +882,44 @@ class Component extends DCLogic {
   toggleFlag = (id, field) => {
     this.setState(s => ({ members: s.members.map(m => m.id === id ? { ...m, [field]: !m[field] } : m) }));
   };
+  updateLead = (id, patch) => {
+    this.setState(s => ({ leads: s.leads.map(l => l.id === id ? { ...l, ...patch } : l) }));
+  };
+  addLead = (lead) => {
+    const id = 'l' + (this.state.leads.length + 1) + '_' + Date.now();
+    this.setState(s => ({ leads: [{ id, fechaAsignacion: new Date().toISOString().slice(0,10), status: 'Nuevo', tour: false, fechaCita: '', appDownloaded: false, comentarios: '', memberId: null, ...lead }, ...s.leads] }));
+  };
+  setGoal = (key, value) => {
+    this.setState(s => ({ goals: { ...s.goals, [key]: value } }));
+  };
+  linkLead = (memberId, leadId) => {
+    if (!leadId) return;
+    const lead = this.state.leads.find(l => l.id === leadId);
+    if (!lead) return;
+    this.updateLead(leadId, { memberId });
+    const patch = {};
+    if (lead.rp) patch.rp = lead.rp;
+    if (lead.appDownloaded) patch.app = true;
+    if (Object.keys(patch).length) this.updateMember(memberId, patch);
+  };
 
   initialsOf(name) {
     const parts = name.split(' ');
     return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
   }
 
-  riskColors(risk) {
-    if (risk === 'Alto') return { bg: '#FBEAEA', text: '#B42318' };
-    if (risk === 'Medio') return { bg: '#FDF3DF', text: '#92610A' };
-    return { bg: '#E8F5EC', text: '#1E7A42' };
+  riskScoreColor(score) {
+    if (score >= 9) return '#1E7A42';
+    if (score >= 7) return '#92610A';
+    return '#B42318';
   }
-
-  riskBadgeStyle(risk) {
-    const c = this.riskColors(risk);
-    return { background: c.bg, color: c.text, fontSize: '12px', fontWeight: 600, padding: '4px 12px', borderRadius: '999px', display: 'inline-block' };
+  riskScoreBg(score) {
+    if (score >= 9) return '#E8F5EC';
+    if (score >= 7) return '#FDF3DF';
+    return '#FBEAEA';
   }
-
-  riskSelectStyle(risk) {
-    const c = this.riskColors(risk);
-    return { background: c.bg, color: c.text, fontSize: '13px', fontWeight: 600, padding: '6px 8px', borderRadius: '7px', border: '1px solid #E4E1DC', fontFamily: 'inherit', cursor: 'pointer' };
+  riskBadgeStyleFromScore(score) {
+    return { background: this.riskScoreBg(score), color: this.riskScoreColor(score), fontSize: '12px', fontWeight: 600, padding: '4px 12px', borderRadius: '999px', display: 'inline-block' };
   }
 
   tierColor(pct) {
@@ -564,6 +939,10 @@ class Component extends DCLogic {
 
   chipStyle(active) {
     return { display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '999px', fontSize: '13px', fontWeight: 500, background: active ? '#E8F5EC' : '#F1EFEA', color: active ? '#1E7A42' : '#928D85' };
+  }
+
+  captureToggleStyle(active) {
+    return { padding: '10px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: active ? '1px solid #1E7A42' : '1px solid #D9D5CE', background: active ? '#E8F5EC' : '#FFFFFF', color: active ? '#1E7A42' : '#2B2926', whiteSpace: 'nowrap' };
   }
 
   computeRisk(m) {
@@ -587,7 +966,7 @@ class Component extends DCLogic {
         adherencia: { score: 6 },
         frecuencia: { score: 7 },
         condicion: { level: 'Intermedio', score: 5 },
-        riesgo: { score: 5 },
+        riesgo: { score: 7 },
         nivelGeneral: { label: 'En progreso' },
       };
     }
@@ -596,7 +975,7 @@ class Component extends DCLogic {
     const frecuencia = this.deriveScore(m, -1);
     const condScore = this.deriveScore(m, -1);
     const condLevel = condScore >= 7 ? 'Alto' : condScore >= 4 ? 'Intermedio' : 'Bajo';
-    const riesgoScore = m.risk === 'Alto' ? 3 : m.risk === 'Medio' ? 5 : 8;
+    const riesgoScore = m.risk === 'Alto' ? 3 : m.risk === 'Medio' ? 7 : 9;
     const nivelLabel = m.risk === 'Alto' ? 'Necesita atención' : m.risk === 'Medio' ? 'En progreso' : 'Estable';
     return {
       enfoque: { score: enfoque, label: enfoque >= 7 ? 'Alto enfoque' : enfoque >= 4 ? 'Enfoque moderado' : 'Bajo enfoque' },
@@ -638,10 +1017,12 @@ class Component extends DCLogic {
   enrich(m0) {
     const risk = this.computeRisk(m0);
     const m = { ...m0, risk };
+    const evaluacion = this.getEvaluacion(m);
     return {
       ...m,
       initials: this.initialsOf(m.name),
-      riskBadgeStyle: this.riskBadgeStyle(m.risk),
+      riskBadgeStyle: this.riskBadgeStyleFromScore(evaluacion.riesgo.score),
+      riskScoreColor: this.riskScoreColor(evaluacion.riesgo.score),
       appCheck: m.app ? '✓' : '✕',
       appCheckStyle: this.checkStyle(m.app),
       sportlabCheck: m.sportlab ? '✓' : '✕',
@@ -651,7 +1032,7 @@ class Component extends DCLogic {
       appCheckButtonStyle: this.checkButtonStyle(m.app),
       sportlabCheckButtonStyle: this.checkButtonStyle(m.sportlab),
       keepgoingCheckButtonStyle: this.checkButtonStyle(m.keepgoing),
-      evaluacion: this.getEvaluacion(m),
+      evaluacion,
       intake: this.getIntake(m),
       comments: (this.baseComments[m.id] || []).concat(this.state.extraComments[m.id] || []),
       noComments: ((this.baseComments[m.id] || []).length + (this.state.extraComments[m.id] || []).length) === 0,
@@ -660,12 +1041,14 @@ class Component extends DCLogic {
       sportlabToggle: () => this.toggleFlag(m0.id, 'sportlab'),
       keepgoingToggle: () => this.toggleFlag(m0.id, 'keepgoing'),
       onRpChange: (e) => this.updateMember(m0.id, { rp: e.target.value }),
+      onMemberNoChange: (e) => this.updateMember(m0.id, { memberNo: e.target.value }),
+      onLinkLead: (e) => this.linkLead(m0.id, e.target.value),
+      sportlabLabel: m.sportlab ? '✓ SPORTLAB' : 'Marcar SPORTLAB',
+      keepgoingLabel: m.keepgoing ? '✓ KEEP GOING' : 'Marcar KEEP GOING',
+      sportlabToggleStyle: this.captureToggleStyle(m.sportlab),
+      keepgoingToggleStyle: this.captureToggleStyle(m.keepgoing),
     };
   }
-
-  goTo = (screen, memberId) => {
-    this.setState(s => ({ currentScreen: screen, selectedMemberId: memberId != null ? memberId : s.selectedMemberId }));
-  };
 
   onCommentChange = (e) => this.setState({ newComment: e.target.value });
 
@@ -686,7 +1069,7 @@ class Component extends DCLogic {
   onSearchChange = (e) => this.setState({ liderSearch: e.target.value });
   setLiderRpFilter = (name) => this.setState({ liderRpFilter: name });
   setLiderQuickFilter = (f) => this.setState(s => ({ liderQuickFilter: s.liderQuickFilter === f ? 'ninguno' : f }));
-  exportTable = () => { /* stub: read-only leadership view */ };
+  onLiderMonthChange = (e) => this.setState({ liderMonth: e.target.value });
 
   setLiderSort = (key) => {
     this.setState(s => ({
@@ -694,15 +1077,6 @@ class Component extends DCLogic {
       liderSortDir: s.liderSortKey === key ? (s.liderSortDir === 'asc' ? 'desc' : 'asc') : 'asc',
     }));
   };
-
-  parseAltaDate(str) {
-    const monthMap = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11 };
-    const parts = str.trim().split(' ');
-    const day = parseInt(parts[0], 10);
-    const month = monthMap[parts[1]] || 0;
-    const year = parseInt(parts[2], 10);
-    return new Date(year, month, day).getTime();
-  }
 
   sortLiderRows(rows, key, dir) {
     const riskOrder = { Alto: 0, Medio: 1, Bajo: 2 };
@@ -714,7 +1088,8 @@ class Component extends DCLogic {
       else if (key === 'sportlab') cmp = (b.sportlab ? 1 : 0) - (a.sportlab ? 1 : 0);
       else if (key === 'keepgoing') cmp = (b.keepgoing ? 1 : 0) - (a.keepgoing ? 1 : 0);
       else if (key === 'risk') cmp = riskOrder[a.risk] - riskOrder[b.risk];
-      else if (key === 'altaDate') cmp = this.parseAltaDate(a.altaDate) - this.parseAltaDate(b.altaDate);
+      else if (key === 'estado') cmp = (a.reviewed ? 1 : 0) - (b.reviewed ? 1 : 0);
+      else if (key === 'altaDate') cmp = a.altaMonth.localeCompare(b.altaMonth);
       if (cmp === 0) cmp = a.name.localeCompare(b.name);
       return dir === 'desc' ? -cmp : cmp;
     });
@@ -733,12 +1108,44 @@ class Component extends DCLogic {
     return { padding: '8px 16px', borderRadius: '999px', fontSize: '13px', fontWeight: 500, border: active ? '1px solid #18181B' : '1px solid #E4E1DC', cursor: 'pointer', background: active ? '#18181B' : '#FFFFFF', color: active ? '#FFFFFF' : '#57534E' };
   }
 
+  isClosed(status) { return this.closedStatuses.indexOf(status) !== -1; }
+
+  monthLabel(key) {
+    const parts = key.split('-');
+    const name = this.monthNames[parseInt(parts[1], 10) - 1];
+    const label = name + ' ' + parts[0];
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
+  onLeadsMonthChange = (e) => this.setState({ leadsMonth: e.target.value });
+  onLeadsSearchChange = (e) => this.setState({ leadsSearch: e.target.value });
+  setLeadsTabProceso = () => this.setState({ leadsTab: 'proceso' });
+  setLeadsTabCerrados = () => this.setState({ leadsTab: 'cerrados' });
+  toggleLeadsForm = () => this.setState(s => ({ leadsShowForm: !s.leadsShowForm }));
+  onNewLeadNombreChange = (e) => this.setState({ newLeadNombre: e.target.value });
+  onNewLeadTelefonoChange = (e) => this.setState({ newLeadTelefono: e.target.value });
+  onNewLeadEstrategiaChange = (e) => this.setState({ newLeadEstrategia: e.target.value });
+  onNewLeadRpChange = (e) => this.setState({ newLeadRp: e.target.value });
+  saveNewLead = () => {
+    const nombre = this.state.newLeadNombre.trim();
+    if (!nombre) return;
+    this.addLead({ nombre, telefono: this.state.newLeadTelefono.trim(), estrategia: this.state.newLeadEstrategia, rp: this.state.newLeadRp.trim() });
+    this.setState({ newLeadNombre: '', newLeadTelefono: '', newLeadEstrategia: '', newLeadRp: '', leadsShowForm: false });
+  };
+
+  onCsSearchChange = (e) => this.setState({ csSearch: e.target.value });
+  setCsTabPendientes = () => this.setState({ csTab: 'pendientes' });
+  setCsTabCompletos = () => this.setState({ csTab: 'completos' });
+  onCdSearchChange = (e) => this.setState({ cdSearch: e.target.value });
+  setCdTabPendientes = () => this.setState({ cdTab: 'pendientes' });
+  setCdTabCompletos = () => this.setState({ cdTab: 'completos' });
+
   renderVals() {
     const em = this.state.members.map(m => this.enrich(m));
     const selected = em.find(m => m.id === this.state.selectedMemberId) || em[0];
 
-    // --- RP Dashboard (Andrea Torres) ---
-    const currentRp = 'Andrea Torres';
+    // --- Seguimiento por RP ---
+    const currentRp = this.state.currentRp;
     const rpAll = em.filter(m => m.rp === currentRp);
     const total = rpAll.length;
     const kpi = (count) => {
@@ -779,33 +1186,72 @@ class Component extends DCLogic {
     const rpLimit = 3;
     const rpVisibleMembers = this.state.rpShowAll ? rpFiltered : rpFiltered.slice(0, rpLimit);
 
-    // --- Vista líder ---
-    const totalAll = em.length;
+    // --- Concentrado · Socios ---
+    const liderScoped = this.state.liderMonth === 'todos' ? em : em.filter(m => m.altaMonth === this.state.liderMonth);
+    const totalAll = liderScoped.length;
     const kpiG = (count) => {
       const pct = totalAll ? Math.round((count / totalAll) * 100) : 0;
       return { count, pct, pctLabel: pct + '%', color: this.tierColor(pct) };
     };
-    const riesgoAltoCount = em.filter(m => m.risk === 'Alto').length;
+    const riesgoAltoCount = liderScoped.filter(m => m.risk === 'Alto').length;
+    const pendientesCount = liderScoped.filter(m => !m.reviewed).length;
     const liderKpis = {
-      app: kpiG(em.filter(m => m.app).length),
-      sportlab: kpiG(em.filter(m => m.sportlab).length),
-      keepgoing: kpiG(em.filter(m => m.keepgoing).length),
+      app: kpiG(liderScoped.filter(m => m.app).length),
+      sportlab: kpiG(liderScoped.filter(m => m.sportlab).length),
+      keepgoing: kpiG(liderScoped.filter(m => m.keepgoing).length),
       riesgoAlto: { count: riesgoAltoCount, pctLabel: (totalAll ? Math.round((riesgoAltoCount / totalAll) * 100) : 0) + '%' },
+      pendientes: { count: pendientesCount, pctLabel: (totalAll ? Math.round((pendientesCount / totalAll) * 100) : 0) + '%' },
     };
 
-    const perRep = this.reps.map(name => {
-      const list = em.filter(m => m.rp === name);
-      const n = list.length;
-      const pctOf = (count) => (n ? Math.round((count / n) * 100) : 0);
-      const appPct = pctOf(list.filter(m => m.app).length);
-      const sportlabPct = pctOf(list.filter(m => m.sportlab).length);
-      const keepgoingPct = pctOf(list.filter(m => m.keepgoing).length);
-      return {
-        name, initials: this.initialsOf(name), count: n,
-        appPct, appColor: this.tierColor(appPct), appPctLabel: appPct + '%',
-        sportlabPct, sportlabColor: this.tierColor(sportlabPct), sportlabPctLabel: sportlabPct + '%',
-        keepgoingPct, keepgoingColor: this.tierColor(keepgoingPct), keepgoingPctLabel: keepgoingPct + '%',
-      };
+    const monthKeys = Array.from(new Set(em.map(m => m.altaMonth))).sort();
+    const liderMonths = monthKeys.map(k => ({ key: k, label: this.monthLabel(k) }));
+    const liderScopeLabel = this.state.liderMonth === 'todos' ? 'General · todos los meses' : this.monthLabel(this.state.liderMonth);
+
+    const pctOfTotal = (count) => (totalAll ? Math.round((count / totalAll) * 100) : 0);
+    const hombres = liderScoped.filter(m => m.gender === 'Hombre').length;
+    const mujeres = liderScoped.filter(m => m.gender === 'Mujer').length;
+    const liderGeneroStats = [
+      { label: 'Hombres', count: hombres, pct: pctOfTotal(hombres), color: '#1D4ED8' },
+      { label: 'Mujeres', count: mujeres, pct: pctOfTotal(mujeres), color: '#B08D45' },
+    ];
+
+    const ageBuckets = [
+      { label: '18-25', min: 18, max: 25 },
+      { label: '26-35', min: 26, max: 35 },
+      { label: '36-45', min: 36, max: 45 },
+      { label: '46-55', min: 46, max: 55 },
+      { label: '56+', min: 56, max: 200 },
+    ];
+    const liderEdadStats = ageBuckets.map(b => {
+      const count = liderScoped.filter(m => m.age >= b.min && m.age <= b.max).length;
+      const pct = pctOfTotal(count);
+      return { label: b.label, count, pct, color: this.tierColor(pct) };
+    });
+
+    const liderRiesgoStats = ['Alto', 'Medio', 'Bajo'].map(r => {
+      const count = liderScoped.filter(m => m.risk === r).length;
+      const pct = pctOfTotal(count);
+      const color = r === 'Alto' ? '#B42318' : r === 'Medio' ? '#92610A' : '#1E7A42';
+      return { label: r, count, pct, color };
+    });
+
+    const jklFields = [
+      { field: 'mejorar', column: 'J', label: 'Qué siente que más necesita mejorar' },
+      { field: 'abandono', column: 'K', label: 'Por qué ha abandonado el ejercicio antes' },
+      { field: 'ayudaria', column: 'L', label: 'Qué le ayudaría a mantenerse constante' },
+    ];
+    const liderJklCards = jklFields.map(({ field, column, label }) => {
+      const counts = {};
+      liderScoped.forEach(m => {
+        const v = m.intake[field];
+        if (!v) return;
+        counts[v] = (counts[v] || 0) + 1;
+      });
+      const entries = Object.keys(counts).map(k => ({ label: k, count: counts[k] }));
+      const totalCount = entries.reduce((a, e) => a + e.count, 0);
+      entries.sort((a, b) => b.count - a.count);
+      const items = entries.slice(0, 4).map(e => ({ label: e.label, count: e.count, pct: totalCount ? Math.round((e.count / totalCount) * 100) : 0 }));
+      return { title: 'Columna ' + column + ' · ' + label, items };
     });
 
     const liderRpDefs = ['Todos', ...this.reps];
@@ -817,6 +1263,8 @@ class Component extends DCLogic {
     const liderQuickDefs = [
       { id: 'riesgoalto', label: 'Riesgo alto' },
       { id: 'sinkeepgoing', label: 'Sin Keep Going' },
+      { id: 'sinapp', label: 'Sin APP' },
+      { id: 'sinsportlab', label: 'Sin SPORTLAB' },
     ];
     const liderQuickFilterOptions = liderQuickDefs.map(f => ({
       label: f.label,
@@ -824,14 +1272,16 @@ class Component extends DCLogic {
       onClick: () => this.setLiderQuickFilter(f.id),
     }));
 
-    let liderFiltered = em;
+    let liderFiltered = liderScoped;
     if (this.state.liderSearch.trim()) {
       const q = this.state.liderSearch.trim().toLowerCase();
       liderFiltered = liderFiltered.filter(m => m.name.toLowerCase().includes(q));
     }
     if (this.state.liderRpFilter !== 'todos') liderFiltered = liderFiltered.filter(m => m.rp === this.state.liderRpFilter);
     if (this.state.liderQuickFilter === 'riesgoalto') liderFiltered = liderFiltered.filter(m => m.risk === 'Alto');
-    if (this.state.liderQuickFilter === 'sinkeepgoing') liderFiltered = liderFiltered.filter(m => !m.keepgoing);
+    else if (this.state.liderQuickFilter === 'sinkeepgoing') liderFiltered = liderFiltered.filter(m => !m.keepgoing);
+    else if (this.state.liderQuickFilter === 'sinapp') liderFiltered = liderFiltered.filter(m => !m.app);
+    else if (this.state.liderQuickFilter === 'sinsportlab') liderFiltered = liderFiltered.filter(m => !m.sportlab);
 
     liderFiltered = this.sortLiderRows(liderFiltered, this.state.liderSortKey, this.state.liderSortDir);
 
@@ -842,6 +1292,7 @@ class Component extends DCLogic {
       { key: 'sportlab', label: 'SPORTLAB', align: 'center' },
       { key: 'keepgoing', label: 'KEEP GOING', align: 'center' },
       { key: 'risk', label: 'Riesgo', align: 'left' },
+      { key: 'estado', label: 'Estado', align: 'center' },
       { key: 'altaDate', label: 'Fecha de alta', align: 'left' },
     ];
     const liderColumns = liderColumnDefs.map(c => ({
@@ -852,16 +1303,97 @@ class Component extends DCLogic {
       onClick: () => this.setLiderSort(c.key),
     }));
 
+    const liderFilteredMembers = liderFiltered.map(m => ({
+      ...m,
+      rp: m.rp || 'Sin asignar',
+      estadoLabel: m.reviewed ? 'Revisado' : 'Pendiente',
+      estadoBadgeStyle: { fontSize: '12px', fontWeight: 600, padding: '4px 12px', borderRadius: '999px', display: 'inline-block', background: m.reviewed ? '#E8F5EC' : '#FDF3DF', color: m.reviewed ? '#1E7A42' : '#92610A' },
+    }));
+
+    // --- Concentrado · Leads ---
+    const leadMonthKeys = Array.from(new Set(this.state.leads.map(l => l.fechaAsignacion.slice(0, 7)))).sort();
+    const leadsMonths = leadMonthKeys.map(k => ({ key: k, label: this.monthLabel(k) }));
+    const leadsScoped = this.state.leadsMonth === 'todos' ? this.state.leads : this.state.leads.filter(l => l.fechaAsignacion.slice(0, 7) === this.state.leadsMonth);
+    const leadsSearched = this.state.leadsSearch.trim()
+      ? leadsScoped.filter(l => l.nombre.toLowerCase().includes(this.state.leadsSearch.trim().toLowerCase()))
+      : leadsScoped;
+
+    const leadsEnProceso = leadsSearched.filter(l => !this.isClosed(l.status));
+    const leadsCerrados = leadsSearched.filter(l => this.isClosed(l.status));
+    const leadsVisibleRaw = this.state.leadsTab === 'proceso' ? leadsEnProceso : leadsCerrados;
+    const leadsVisible = leadsVisibleRaw.map(l => ({
+      ...l,
+      telefono: l.telefono || 'Sin teléfono',
+      estrategia: l.estrategia || 'Sin estrategia',
+      rp: l.rp || 'Sin RP',
+      onTourChange: (e) => this.updateLead(l.id, { tour: e.target.checked }),
+      onAppChange: (e) => this.updateLead(l.id, { appDownloaded: e.target.checked }),
+      onStatusChange: (e) => this.updateLead(l.id, { status: e.target.value, fechaCierre: this.isClosed(e.target.value) ? new Date().toISOString().slice(0,10) : '' }),
+      onFechaCitaChange: (e) => this.updateLead(l.id, { fechaCita: e.target.value }),
+      onComentariosChange: (e) => this.updateLead(l.id, { comentarios: e.target.value }),
+    }));
+
+    const leadsRepsPresent = Array.from(new Set(this.state.leads.map(l => l.rp).filter(r => !!r))).sort();
+    const leadsTotal = leadsScoped.length;
+    const leadsTourCount = leadsScoped.filter(l => l.tour).length;
+    const leadsVentaCount = leadsScoped.filter(l => l.status === '100% Venta').length;
+    const pctOf = (n, t) => (t ? Math.round((n / t) * 100) : 0);
+    const leadsTourPct = pctOf(leadsTourCount, leadsTotal);
+    const leadsVentaPct = pctOf(leadsVentaCount, leadsTourCount);
+
+    const generalGoalKey = this.state.leadsMonth + '|';
+    const leadsGoalRows = this.state.leadsMonth === 'todos' ? [] : [
+      { rp: '', label: 'General', meta: this.state.goals[generalGoalKey] || 0, real: leadsVentaCount },
+      ...leadsRepsPresent.map(rp => ({ rp, label: rp, meta: this.state.goals[this.state.leadsMonth + '|' + rp] || 0, real: leadsScoped.filter(l => l.rp === rp && l.status === '100% Venta').length })),
+    ].map(row => {
+      const pct = row.meta ? Math.round((row.real / row.meta) * 100) : 0;
+      return { ...row, pct, color: this.tierColor(pct), onMetaChange: (e) => this.setGoal(this.state.leadsMonth + '|' + row.rp, Number(e.target.value) || 0) };
+    });
+
+    const unlinkedWonLeads = this.state.leads.filter(l => l.status === '100% Venta' && !l.memberId).map(l => ({ ...l, rp: l.rp || 'Sin RP' }));
+
+    // --- Captura Socios (Portal Admin) ---
+    const csAll = em;
+    const csPending = csAll.filter(m => !m.memberNo || !m.rp);
+    const csDone = csAll.filter(m => m.memberNo && m.rp);
+    const csSearched = (this.state.csSearch.trim() ? (this.state.csTab === 'pendientes' ? csPending : csDone).filter(m => m.name.toLowerCase().includes(this.state.csSearch.trim().toLowerCase())) : (this.state.csTab === 'pendientes' ? csPending : csDone));
+    const csVisible = csSearched.map(m => ({ ...m, rp: m.memberNo && m.rp ? m.rp : m.rp }));
+
+    // --- Captura Sportlab (Portal Deportes) ---
+    const cdAll = em;
+    const cdPending = cdAll.filter(m => !m.sportlab || !m.keepgoing);
+    const cdDone = cdAll.filter(m => m.sportlab && m.keepgoing);
+    const cdSearched = (this.state.cdSearch.trim() ? (this.state.cdTab === 'pendientes' ? cdPending : cdDone).filter(m => m.name.toLowerCase().includes(this.state.cdSearch.trim().toLowerCase())) : (this.state.cdTab === 'pendientes' ? cdPending : cdDone));
+
+    // --- TopNav / portal ---
+    const screen = this.state.currentScreen;
+    const portalOf = { leads: 'leads', lider: 'socios', rpdash: 'socios', perfil: 'socios', capturaSocios: 'admin', capturaSportlab: 'deportes' };
+    const portalLabels = { leads: 'Concentrado · Leads', socios: 'Concentrado · Socios', admin: 'Portal Admin', deportes: 'Portal Deportes' };
+    const portalTabDefs = {
+      leads: [{ s: 'leads', label: 'Concentrado' }],
+      socios: [{ s: 'lider', label: 'Concentrado' }, { s: 'rpdash', label: 'Seguimiento por RP' }, { s: 'perfil', label: 'Vista Socio' }],
+      admin: [{ s: 'capturaSocios', label: 'Captura Socios' }],
+      deportes: [{ s: 'capturaSportlab', label: 'Captura Sportlab' }],
+    };
+    const portal = portalOf[screen];
+    const portalTabs = portal ? portalTabDefs[portal].map(t => ({ label: t.label, style: this.tabBtnStyle(screen === t.s), onClick: () => this.goTo(t.s) })) : [];
+
     return {
-      isPerfil: this.state.currentScreen === 'perfil',
-      isRp: this.state.currentScreen === 'rpdash',
-      isLider: this.state.currentScreen === 'lider',
-      tabPerfilStyle: this.tabBtnStyle(this.state.currentScreen === 'perfil'),
-      tabRpStyle: this.tabBtnStyle(this.state.currentScreen === 'rpdash'),
-      tabLiderStyle: this.tabBtnStyle(this.state.currentScreen === 'lider'),
-      goToPerfil: () => this.goTo('perfil'),
-      goToRp: () => this.goTo('rpdash'),
-      goToLider: () => this.goTo('lider'),
+      isHome: screen === 'home',
+      isPerfil: screen === 'perfil',
+      isRp: screen === 'rpdash',
+      isLider: screen === 'lider',
+      isLeads: screen === 'leads',
+      isCapturaSocios: screen === 'capturaSocios',
+      isCapturaSportlab: screen === 'capturaSportlab',
+      portalLabel: portal ? portalLabels[portal] : 'Portal operativo',
+      showPortalTabs: !!portal,
+      portalTabs,
+      goToHome: this.goToHome,
+      goToLeads: this.goToLeads,
+      goToLider: this.goToLider,
+      goToCapturaSocios: this.goToCapturaSocios,
+      goToCapturaSportlab: this.goToCapturaSportlab,
 
       selected,
       perfilSearch: this.state.perfilSearch,
@@ -885,6 +1417,8 @@ class Component extends DCLogic {
       rpKpis,
       rpSearch: this.state.rpSearch,
       onRpSearchChange: this.onRpSearchChange,
+      currentRp: this.state.currentRp,
+      onCurrentRpChange: this.onCurrentRpChange,
       rpFilterOptions,
       rpVisibleMembers,
       rpVisibleCount: rpVisibleMembers.length,
@@ -892,19 +1426,75 @@ class Component extends DCLogic {
       rpHasMore: !this.state.rpShowAll && rpFiltered.length > rpLimit,
       toggleRpShowAll: this.toggleRpShowAll,
 
-      liderSucursal: 'Sucursal Naciones Unidas',
-      liderPeriod: 'Julio 2026',
+      liderMonth: this.state.liderMonth,
+      onLiderMonthChange: this.onLiderMonthChange,
+      liderMonths,
+      liderScopeLabel,
       liderTotal: totalAll,
       liderKpis,
-      perRep,
+      liderGeneroStats,
+      liderEdadStats,
+      liderRiesgoStats,
+      liderJklCards,
       liderSearch: this.state.liderSearch,
       onSearchChange: this.onSearchChange,
       liderRpFilterOptions,
       liderQuickFilterOptions,
       liderColumns,
-      liderFilteredMembers: liderFiltered,
+      liderFilteredMembers,
       liderFilteredCount: liderFiltered.length,
-      exportTable: this.exportTable,
+
+      leadsMonth: this.state.leadsMonth,
+      onLeadsMonthChange: this.onLeadsMonthChange,
+      leadsMonths,
+      leadsMonthIsTodos: this.state.leadsMonth === 'todos',
+      leadsMonthHasGoals: this.state.leadsMonth !== 'todos',
+      leadsMonthLabel: this.state.leadsMonth === 'todos' ? '' : this.monthLabel(this.state.leadsMonth),
+      leadsGoalRows,
+      leadsTotal,
+      leadsTourCount, leadsTourPct, leadsTourColor: this.tierColor(leadsTourPct),
+      leadsVentaCount, leadsVentaPct, leadsVentaColor: this.tierColor(leadsVentaPct),
+      leadsFormBtnLabel: this.state.leadsShowForm ? 'Cerrar' : '+ Nuevo lead',
+      leadsShowForm: this.state.leadsShowForm,
+      newLeadNombre: this.state.newLeadNombre, onNewLeadNombreChange: this.onNewLeadNombreChange,
+      newLeadTelefono: this.state.newLeadTelefono, onNewLeadTelefonoChange: this.onNewLeadTelefonoChange,
+      newLeadEstrategia: this.state.newLeadEstrategia, onNewLeadEstrategiaChange: this.onNewLeadEstrategiaChange,
+      newLeadRp: this.state.newLeadRp, onNewLeadRpChange: this.onNewLeadRpChange,
+      newLeadSaveBtnStyle: { background: '#18181B', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: this.state.newLeadNombre.trim() ? 'pointer' : 'not-allowed', opacity: this.state.newLeadNombre.trim() ? 1 : 0.5 },
+      saveNewLead: this.saveNewLead,
+      toggleLeadsForm: this.toggleLeadsForm,
+      estrategiaOptions: this.estrategiaOptions,
+      leadsSearch: this.state.leadsSearch,
+      onLeadsSearchChange: this.onLeadsSearchChange,
+      leadsTabProcesoStyle: this.pillBtnStyle(this.state.leadsTab === 'proceso'),
+      leadsTabCerradosStyle: this.pillBtnStyle(this.state.leadsTab === 'cerrados'),
+      setLeadsTabProceso: this.setLeadsTabProceso,
+      setLeadsTabCerrados: this.setLeadsTabCerrados,
+      leadsEnProcesoCount: leadsEnProceso.length,
+      leadsCerradosCount: leadsCerrados.length,
+      leadsListEmpty: leadsVisible.length === 0,
+      leadsEmptyMessage: this.state.leadsTab === 'proceso' ? 'No hay leads en proceso.' : 'Aún no hay leads cerrados.',
+      leadsVisible,
+      statusOptions: this.statusOptions,
+
+      csSearch: this.state.csSearch, onCsSearchChange: this.onCsSearchChange,
+      csTabPendientesStyle: this.tabBtnStyle(this.state.csTab === 'pendientes'),
+      csTabCompletosStyle: this.tabBtnStyle(this.state.csTab === 'completos'),
+      setCsTabPendientes: this.setCsTabPendientes, setCsTabCompletos: this.setCsTabCompletos,
+      csPendientesCount: csPending.length, csCompletosCount: csDone.length,
+      csListEmpty: csVisible.length === 0,
+      csEmptyMessage: this.state.csTab === 'pendientes' ? 'Todos los socios tienen número y RP asignado.' : 'Aún no hay socios completos.',
+      csVisible,
+      unlinkedWonLeads,
+
+      cdSearch: this.state.cdSearch, onCdSearchChange: this.onCdSearchChange,
+      cdTabPendientesStyle: this.tabBtnStyle(this.state.cdTab === 'pendientes'),
+      cdTabCompletosStyle: this.tabBtnStyle(this.state.cdTab === 'completos'),
+      setCdTabPendientes: this.setCdTabPendientes, setCdTabCompletos: this.setCdTabCompletos,
+      cdPendientesCount: cdPending.length, cdCompletosCount: cdDone.length,
+      cdListEmpty: cdSearched.length === 0,
+      cdEmptyMessage: this.state.cdTab === 'pendientes' ? 'Todos los socios están al día en SPORTLAB y KEEP GOING.' : 'Aún no hay socios completos.',
+      cdVisible: cdSearched,
     };
   }
 }
