@@ -86,22 +86,6 @@ function sortMembers(rows: Member[], key: SortKey, dir: SortDir): Member[] {
   return sorted;
 }
 
-function StatBar({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  const pct = total ? Math.round((count / total) * 100) : 0;
-  const resolvedColor = total === 0 ? '#ACA79E' : color;
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6E6A64' }}>
-        <span>{label}</span>
-        <span style={{ fontWeight: 600, color: resolvedColor }}>{count} · {pctLabel(count, total)}</span>
-      </div>
-      <div style={{ height: 6, borderRadius: 999, background: '#EEEBE5', overflow: 'hidden' }}>
-        <div style={{ height: '100%', background: resolvedColor, width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
 function IndicatorCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card gap={14}>
