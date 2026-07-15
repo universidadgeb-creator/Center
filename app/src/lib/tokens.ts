@@ -17,6 +17,12 @@ export const color = {
   textMuted: '#8B877F',
   textFaint: '#ACA79E',
   eyebrow: '#948F86',
+
+  /** Brand accent (Positivus-style neon green + near-black) — used only for primary CTAs
+   * and active/selected tabs & pills. Never repurposed for risk/status colors, which stay
+   * on the existing semantic palette (see lib/style.ts) so meaning never gets muddled. */
+  accent: '#B9FF66',
+  accentInk: '#191A23',
 } as const;
 
 export const radius = {

@@ -20,6 +20,11 @@ export function CapturaSocios({
     [members]
   );
 
+  const ejecutivos = useMemo(
+    () => Array.from(new Set(members.map(m => m.ejecutivo).filter((e): e is string => !!e))).sort(),
+    [members]
+  );
+
   const unlinkedWonLeads = useMemo(
     () => leads.filter(l => isWonStatus(l.status) && !l.member_id).sort((a, b) => a.nombre.localeCompare(b.nombre)),
     [leads]
@@ -40,12 +45,15 @@ export function CapturaSocios({
       <datalist id="captura-socios-rp-suggestions">
         {reps.map(r => <option key={r} value={r} />)}
       </datalist>
+      <datalist id="captura-socios-ejecutivo-suggestions">
+        {ejecutivos.map(e => <option key={e} value={e} />)}
+      </datalist>
       <RoleQueue
         title="Captura de socio y RP"
-        subtitle="Asigna el número de socio y el RP a cada nuevo registro del formulario."
+        subtitle="Verifica el RP de venta y asigna ejecutivo y número de socio a cada nuevo registro del formulario."
         members={members}
-        isPending={m => !m.member_no || !m.rp}
-        emptyPendingMessage="Todos los socios tienen número y RP asignado."
+        isPending={m => !m.member_no || !m.rp || !m.ejecutivo}
+        emptyPendingMessage="Todos los socios tienen número, RP y ejecutivo asignado."
         renderRow={m => (
           <div key={m.id} style={captureRowStyle()}>
             <div style={{ flex: '2 1 200px', minWidth: 180 }}>
@@ -62,9 +70,17 @@ export function CapturaSocios({
             <input
               type="text"
               list="captura-socios-rp-suggestions"
-              placeholder="RP asignado"
+              placeholder="RP (venta)"
               defaultValue={m.rp ?? ''}
               onBlur={e => { if (e.target.value !== (m.rp ?? '')) updateMember(m.id, { rp: e.target.value || null }); }}
+              style={captureInputStyle()}
+            />
+            <input
+              type="text"
+              list="captura-socios-ejecutivo-suggestions"
+              placeholder="Ejecutivo asignado"
+              defaultValue={m.ejecutivo ?? ''}
+              onBlur={e => { if (e.target.value !== (m.ejecutivo ?? '')) updateMember(m.id, { ejecutivo: e.target.value || null }); }}
               style={captureInputStyle()}
             />
             <select

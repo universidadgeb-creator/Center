@@ -3,19 +3,26 @@ import type { Member } from '../lib/types';
 import { checkStyle, formatDate, pctColor, pctLabel, pillBtnStyle, riskBadgeStyle, riskCategoryColors, riskLabel, sortHeaderStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
 import { Card, Eyebrow } from '../components/Card';
+import { StackedBar, MagnitudeBar, DonutChart } from '../components/Chart';
 
-type SortKey = 'name' | 'rp' | 'app' | 'sportlab' | 'keepgoing' | 'risk' | 'altaDate' | 'estado';
+/** Validated 4-color categorical palette for the top-4 J/K/L answer slices; "Otros" always
+ * uses the neutral muted gray already used elsewhere on this screen. */
+const JKL_COLORS = ['#1D4ED8', '#C4791A', '#15803D', '#9D174D'];
+
+type SortKey = 'name' | 'rp' | 'ejecutivo' | 'app' | 'sportlab' | 'keepgoing' | 'performanceDay' | 'risk' | 'altaDate' | 'estado';
 type SortDir = 'asc' | 'desc';
-type QuickFilter = 'ninguno' | 'riesgoalto' | 'sinkeepgoing' | 'sinapp' | 'sinsportlab';
+type QuickFilter = 'ninguno' | 'riesgoalto' | 'sinkeepgoing' | 'sinapp' | 'sinsportlab' | 'sinperformanceday';
 
 const RISK_ORDER: Record<string, number> = { Alto: 0, Medio: 1, Bajo: 2 };
 
 const COLUMNS: { key: SortKey; label: string; align: 'left' | 'center' }[] = [
   { key: 'name', label: 'Socio', align: 'left' },
   { key: 'rp', label: 'RP asignado', align: 'left' },
+  { key: 'ejecutivo', label: 'Ejecutivo', align: 'left' },
   { key: 'app', label: 'APP', align: 'center' },
   { key: 'sportlab', label: 'SPORTLAB', align: 'center' },
   { key: 'keepgoing', label: 'KEEP GOING', align: 'center' },
+  { key: 'performanceDay', label: 'Performance Day', align: 'center' },
   { key: 'risk', label: 'Riesgo', align: 'left' },
   { key: 'estado', label: 'Estado', align: 'center' },
   { key: 'altaDate', label: 'Fecha de alta', align: 'left' },
@@ -65,9 +72,11 @@ function sortMembers(rows: Member[], key: SortKey, dir: SortDir): Member[] {
     let cmp = 0;
     if (key === 'name') cmp = a.name.localeCompare(b.name);
     else if (key === 'rp') cmp = (a.rp || '').localeCompare(b.rp || '');
+    else if (key === 'ejecutivo') cmp = (a.ejecutivo || '').localeCompare(b.ejecutivo || '');
     else if (key === 'app') cmp = (b.app_downloaded ? 1 : 0) - (a.app_downloaded ? 1 : 0);
     else if (key === 'sportlab') cmp = (b.sportlab ? 1 : 0) - (a.sportlab ? 1 : 0);
     else if (key === 'keepgoing') cmp = (b.keepgoing ? 1 : 0) - (a.keepgoing ? 1 : 0);
+    else if (key === 'performanceDay') cmp = (b.performance_day ? 1 : 0) - (a.performance_day ? 1 : 0);
     else if (key === 'risk') cmp = (RISK_ORDER[riskLabel(a.abandono_score, a.risk)] ?? 3) - (RISK_ORDER[riskLabel(b.abandono_score, b.risk)] ?? 3);
     else if (key === 'estado') cmp = (a.reviewed ? 1 : 0) - (b.reviewed ? 1 : 0);
     else if (key === 'altaDate') cmp = (a.alta_date || '').localeCompare(b.alta_date || '');
@@ -144,6 +153,7 @@ export function Concentrado({
     app: kpiG(scoped.filter(m => m.app_downloaded).length),
     sportlab: kpiG(scoped.filter(m => m.sportlab).length),
     keepgoing: kpiG(scoped.filter(m => m.keepgoing).length),
+    performanceDay: kpiG(scoped.filter(m => m.performance_day).length),
     riesgoAlto: { count: riesgoAltoCount, pctLabel: pctLabel(riesgoAltoCount, totalAll) },
     pendientes: { count: pendientesCount, pctLabel: pctLabel(pendientesCount, totalAll) },
   };
@@ -175,6 +185,7 @@ export function Concentrado({
   else if (quickFilter === 'sinkeepgoing') filtered = filtered.filter(m => !m.keepgoing);
   else if (quickFilter === 'sinapp') filtered = filtered.filter(m => !m.app_downloaded);
   else if (quickFilter === 'sinsportlab') filtered = filtered.filter(m => !m.sportlab);
+  else if (quickFilter === 'sinperformanceday') filtered = filtered.filter(m => !m.performance_day);
 
   filtered = sortMembers(filtered, sortKey, sortDir);
 
@@ -216,9 +227,9 @@ export function Concentrado({
           <Eyebrow>Total socios</Eyebrow>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#18181B' }}>{totalAll}</div>
         </Card>
-        {(['app', 'sportlab', 'keepgoing'] as const).map(k => (
+        {(['app', 'sportlab', 'keepgoing', 'performanceDay'] as const).map(k => (
           <Card key={k}>
-            <Eyebrow>{k === 'app' ? 'APP Descargada' : k === 'sportlab' ? 'SPORTLAB' : 'KEEP GOING'}</Eyebrow>
+            <Eyebrow>{k === 'app' ? 'APP Descargada' : k === 'sportlab' ? 'SPORTLAB' : k === 'keepgoing' ? 'KEEP GOING' : 'Performance Day'}</Eyebrow>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{kpis[k].count}</span>
               <span style={{ fontSize: 13, fontWeight: 600, color: kpis[k].color }}>{kpis[k].pctLabel}</span>
@@ -246,8 +257,12 @@ export function Concentrado({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
 
           <IndicatorCard title="Distribución por género">
-            <StatBar label="Hombres" count={hombres} total={totalAll} color="#1D4ED8" />
-            <StatBar label="Mujeres" count={mujeres} total={totalAll} color="#B08D45" />
+            <StackedBar
+              segments={[
+                { label: 'Hombres', count: hombres, color: '#1D4ED8' },
+                { label: 'Mujeres', count: mujeres, color: '#C4791A' },
+              ]}
+            />
             {generoTotal < totalAll && (
               <div style={{ fontSize: 11, color: '#ACA79E' }}>{totalAll - generoTotal} sin dato de género</div>
             )}
@@ -255,7 +270,7 @@ export function Concentrado({
 
           <IndicatorCard title="Distribución de edades">
             {ageDist.map(b => (
-              <StatBar key={b.label} label={b.label} count={b.count} total={totalAll} color={pctColor(b.count, totalAll)} />
+              <MagnitudeBar key={b.label} label={b.label} count={b.count} total={totalAll} />
             ))}
             {ageSinDato > 0 && (
               <div style={{ fontSize: 11, color: '#ACA79E' }}>{ageSinDato} sin dato de edad</div>
@@ -263,9 +278,7 @@ export function Concentrado({
           </IndicatorCard>
 
           <IndicatorCard title="Distribución de riesgo">
-            {riskDist.map(r => (
-              <StatBar key={r.label} label={r.label} count={r.count} total={totalAll} color={r.color} />
-            ))}
+            <StackedBar segments={riskDist.map(r => ({ label: r.label, count: r.count, color: r.color }))} />
             {riskSinEvaluar > 0 && (
               <div style={{ fontSize: 11, color: '#ACA79E' }}>{riskSinEvaluar} sin evaluar</div>
             )}
@@ -273,16 +286,22 @@ export function Concentrado({
 
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
           {JKL_FIELDS.map(({ field, column, label }) => {
             const { top, total } = topAnswers(scoped, field);
+            const topSum = top.reduce((sum, a) => sum + a.count, 0);
+            const otros = total - topSum;
+            const slices = [
+              ...top.map((a, i) => ({ label: a.label, count: a.count, color: JKL_COLORS[i] })),
+              ...(otros > 0 ? [{ label: 'Otros', count: otros, color: '#ACA79E' }] : []),
+            ];
             return (
               <IndicatorCard key={field} title={`Columna ${column} · ${label}`}>
-                {top.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin respuestas registradas.</div>}
-                {top.map(a => (
-                  <StatBar key={a.label} label={a.label} count={a.count} total={total} color="#57534E" />
-                ))}
-                {total > 0 && <div style={{ fontSize: 11, color: '#ACA79E' }}>{total} respuestas con texto</div>}
+                {top.length === 0 ? (
+                  <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin respuestas registradas.</div>
+                ) : (
+                  <DonutChart slices={slices} />
+                )}
               </IndicatorCard>
             );
           })}
@@ -308,6 +327,7 @@ export function Concentrado({
           <button style={pillBtnStyle(quickFilter === 'sinkeepgoing')} onClick={() => setQuickFilter(f => f === 'sinkeepgoing' ? 'ninguno' : 'sinkeepgoing')}>Sin Keep Going</button>
           <button style={pillBtnStyle(quickFilter === 'sinapp')} onClick={() => setQuickFilter(f => f === 'sinapp' ? 'ninguno' : 'sinapp')}>Sin APP</button>
           <button style={pillBtnStyle(quickFilter === 'sinsportlab')} onClick={() => setQuickFilter(f => f === 'sinsportlab' ? 'ninguno' : 'sinsportlab')}>Sin SPORTLAB</button>
+          <button style={pillBtnStyle(quickFilter === 'sinperformanceday')} onClick={() => setQuickFilter(f => f === 'sinperformanceday' ? 'ninguno' : 'sinperformanceday')}>Sin Performance Day</button>
         </div>
       </div>
 
@@ -317,13 +337,13 @@ export function Concentrado({
             <thead>
               <tr style={{ background: '#FAFAF9' }}>
                 {COLUMNS.map(col => (
-                  <th key={col.key} style={{ textAlign: col.align, padding: '12px 20px', borderBottom: '1px solid #E4E1DC', background: '#FAFAF9' }}>
+                  <th key={col.key} style={{ textAlign: col.align, padding: '12px 20px', borderBottom: '2px solid #191A23', background: '#FAFAF9' }}>
                     <button
                       onClick={() => setSort(col.key)}
                       style={{ ...sortHeaderStyle(), justifyContent: col.align === 'center' ? 'center' : 'flex-start', width: '100%' }}
                     >
                       {col.label}
-                      <span>{sortKey === col.key ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
+                      <span style={{ color: '#191A23' }}>{sortKey === col.key ? (sortDir === 'asc' ? '▲' : '▼') : ''}</span>
                     </button>
                   </th>
                 ))}
@@ -339,6 +359,7 @@ export function Concentrado({
                     </div>
                   </td>
                   <td style={{ padding: '14px 20px', color: '#4A4640' }}>{m.rp || 'Sin asignar'}</td>
+                  <td style={{ padding: '14px 20px', color: '#4A4640' }}>{m.ejecutivo || 'Sin asignar'}</td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <span style={checkStyle(m.app_downloaded)}>{m.app_downloaded ? '✓' : '✕'}</span>
                   </td>
@@ -347,6 +368,9 @@ export function Concentrado({
                   </td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                     <span style={checkStyle(m.keepgoing)}>{m.keepgoing ? '✓' : '✕'}</span>
+                  </td>
+                  <td style={{ padding: '14px 20px', textAlign: 'center' }}>
+                    <span style={checkStyle(m.performance_day)}>{m.performance_day ? '✓' : '✕'}</span>
                   </td>
                   <td style={{ padding: '14px 20px' }}><span style={riskBadgeStyle(m.risk, m.abandono_score)}>{riskLabel(m.abandono_score, m.risk)}</span></td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>

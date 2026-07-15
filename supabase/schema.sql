@@ -28,9 +28,14 @@ create table if not exists members (
   -- operational fields — managed by staff in the portal, not from the Form
   member_no text,
   rp text,
+  -- distinct from `rp` (who sold the membership): the coach/account exec who
+  -- follows up with the member post-sale, assigned from Portal Admin once the
+  -- Form response lands in Concentrado · Socios.
+  ejecutivo text,
   app_downloaded boolean not null default false,
   sportlab boolean not null default false,
   keepgoing boolean not null default false,
+  performance_day boolean not null default false,
 
   -- true once staff has reviewed a newly-synced intake row in Concentrado.
   -- Defaults to false so every new Form submission shows up as "Pendiente";
@@ -75,6 +80,8 @@ create table if not exists members (
 -- safe to re-run against an already-deployed table (e.g. adding `reviewed`
 -- to a database created before this column existed)
 alter table members add column if not exists reviewed boolean not null default false;
+alter table members add column if not exists ejecutivo text;
+alter table members add column if not exists performance_day boolean not null default false;
 
 create index if not exists members_rp_idx on members (rp);
 create index if not exists members_risk_idx on members (risk);
@@ -122,6 +129,7 @@ create table if not exists leads (
 
   fecha_asignacion date not null default current_date,
   estrategia text,
+  promocion text,
   rp text,
   nombre text not null,
   telefono text,
@@ -132,6 +140,10 @@ create table if not exists leads (
   tour boolean not null default false,
   fecha_cita date,
   app_downloaded boolean not null default false,
+  plan text,
+  tipo_alta text,
+  monto_sin_iva numeric(10, 2),
+  monto_con_iva numeric(10, 2),
 
   fecha_cierre date,
   member_id uuid references members(id) on delete set null,
@@ -142,10 +154,48 @@ create table if not exists leads (
 
 -- safe to re-run against an already-deployed table
 alter table leads add column if not exists app_downloaded boolean not null default false;
+alter table leads add column if not exists promocion text;
+alter table leads add column if not exists plan text;
+alter table leads add column if not exists tipo_alta text;
+alter table leads add column if not exists monto_sin_iva numeric(10, 2);
+alter table leads add column if not exists monto_con_iva numeric(10, 2);
 
 create index if not exists leads_rp_idx on leads (rp);
 create index if not exists leads_status_idx on leads (status);
 create index if not exists leads_fecha_asignacion_idx on leads (fecha_asignacion);
+
+-- =========================================================================
+-- rps / promotions
+-- Managed option lists for the Leads Pizarra's RP and Promoción selects — staff
+-- add new values from the portal ("+ dar de alta") instead of a developer
+-- editing code, so everyone sees the same shared list in real time.
+-- =========================================================================
+create table if not exists rps (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists promotions (
+  id uuid primary key default gen_random_uuid(),
+  label text not null unique,
+  color text not null,
+  created_at timestamptz not null default now()
+);
+
+insert into rps (name) values ('Marce'), ('Rodo')
+on conflict (name) do nothing;
+
+insert into promotions (label, color) values
+  ('50% Daypass', '#B42318'),
+  ('Otro', '#C4791A'),
+  ('Anualidad -$2000', '#946200'),
+  ('Mensaje masivo', '#15803D'),
+  ('Copy write ventas corp', '#0891B2'),
+  ('Copy write ciudadela', '#1D4ED8'),
+  ('Copy write reactivación', '#9D174D'),
+  ('Copy write crm', '#4D7C0F')
+on conflict (label) do nothing;
 
 -- =========================================================================
 -- lead_goals
@@ -218,6 +268,8 @@ alter table members enable row level security;
 alter table comments enable row level security;
 alter table leads enable row level security;
 alter table lead_goals enable row level security;
+alter table rps enable row level security;
+alter table promotions enable row level security;
 
 drop policy if exists members_select_anon on members;
 create policy members_select_anon on members for select to anon using (true);
@@ -226,7 +278,7 @@ drop policy if exists members_update_anon on members;
 create policy members_update_anon on members for update to anon using (true) with check (true);
 
 revoke update on members from anon;
-grant update (member_no, rp, app_downloaded, sportlab, keepgoing, reviewed) on members to anon;
+grant update (member_no, rp, ejecutivo, app_downloaded, sportlab, keepgoing, performance_day, reviewed) on members to anon;
 grant select on members to anon;
 
 drop policy if exists comments_select_anon on comments;
@@ -258,3 +310,19 @@ drop policy if exists lead_goals_update_anon on lead_goals;
 create policy lead_goals_update_anon on lead_goals for update to anon using (true) with check (true);
 
 grant select, insert, update on lead_goals to anon;
+
+drop policy if exists rps_select_anon on rps;
+create policy rps_select_anon on rps for select to anon using (true);
+
+drop policy if exists rps_insert_anon on rps;
+create policy rps_insert_anon on rps for insert to anon with check (true);
+
+grant select, insert on rps to anon;
+
+drop policy if exists promotions_select_anon on promotions;
+create policy promotions_select_anon on promotions for select to anon using (true);
+
+drop policy if exists promotions_insert_anon on promotions;
+create policy promotions_insert_anon on promotions for insert to anon with check (true);
+
+grant select, insert on promotions to anon;

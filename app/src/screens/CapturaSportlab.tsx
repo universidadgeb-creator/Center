@@ -11,11 +11,11 @@ export function CapturaSportlab({
 }) {
   return (
     <RoleQueue
-      title="Captura de SPORTLAB y KEEP GOING"
-      subtitle="Marca la asistencia a SPORTLAB y la inscripción a KEEP GOING de cada socio."
+      title="Captura de SPORTLAB, KEEP GOING y Performance Day"
+      subtitle="Marca la asistencia a SPORTLAB, la inscripción a KEEP GOING y Performance Day de cada socio."
       members={members}
-      isPending={m => !m.sportlab || !m.keepgoing}
-      emptyPendingMessage="Todos los socios están al día en SPORTLAB y KEEP GOING."
+      isPending={m => !m.sportlab || !m.keepgoing || !m.performance_day}
+      emptyPendingMessage="Todos los socios están al día en SPORTLAB, KEEP GOING y Performance Day."
       renderRow={m => (
         <div key={m.id} style={captureRowStyle()}>
           <div style={{ flex: '2 1 200px', minWidth: 180 }}>
@@ -34,6 +34,12 @@ export function CapturaSportlab({
               style={captureToggleStyle(m.keepgoing)}
             >
               {m.keepgoing ? '✓ KEEP GOING' : 'Marcar KEEP GOING'}
+            </button>
+            <button
+              onClick={() => updateMember(m.id, { performance_day: !m.performance_day })}
+              style={captureToggleStyle(m.performance_day)}
+            >
+              {m.performance_day ? '✓ Performance Day' : 'Marcar Performance Day'}
             </button>
           </div>
         </div>

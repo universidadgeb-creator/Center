@@ -54,6 +54,24 @@ export function useLeads() {
     }
   }, [refetch]);
 
+  /** Bulk insert (used by the Excel upload in Pizarra) — one request instead of N. Returns
+   * how many rows were actually inserted, so the caller can show an import summary. */
+  const addLeads = useCallback(async (newLeads: LeadInsert[]): Promise<number> => {
+    if (newLeads.length === 0) return 0;
+    try {
+      const { error, count } = await supabase.from('leads').insert(newLeads, { count: 'exact' });
+      if (error) {
+        setError(error.message);
+        return 0;
+      }
+      refetch();
+      return count ?? newLeads.length;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear los leads.');
+      return 0;
+    }
+  }, [refetch]);
+
   const updateLead = useCallback(async (id: string, patch: LeadPatch) => {
     // optimistic update
     setLeads(prev => prev.map(l => (l.id === id ? { ...l, ...patch } : l)));
@@ -69,5 +87,5 @@ export function useLeads() {
     }
   }, [refetch]);
 
-  return { leads, loading, error, addLead, updateLead, refetch };
+  return { leads, loading, error, addLead, addLeads, updateLead, refetch };
 }

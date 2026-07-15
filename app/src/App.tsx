@@ -3,18 +3,21 @@ import { TopNav } from './components/TopNav';
 import { ToastStack } from './components/Toast';
 import { Home } from './screens/Home';
 import { VistaSocio } from './screens/VistaSocio';
-import { VistaRp } from './screens/VistaRp';
+import { VistaEjecutivo } from './screens/VistaEjecutivo';
 import { Concentrado } from './screens/Concentrado';
 import { CapturaSocios } from './screens/CapturaSocios';
 import { CapturaSportlab } from './screens/CapturaSportlab';
-import { ConcentradoLeads } from './screens/ConcentradoLeads';
+import { LeadsSeguimientoRp } from './screens/LeadsSeguimientoRp';
+import { LeadsPizarra } from './screens/LeadsPizarra';
 import { useMembers } from './hooks/useMembers';
 import { useLeads } from './hooks/useLeads';
 import { useLeadGoals } from './hooks/useLeadGoals';
+import { useRps } from './hooks/useRps';
+import { usePromotions } from './hooks/usePromotions';
 import { useToast } from './hooks/useToast';
 import { friendlyError } from './lib/errors';
 
-export type Screen = 'home' | 'perfil' | 'rpdash' | 'lider' | 'capturaSocios' | 'capturaSportlab' | 'leads';
+export type Screen = 'home' | 'perfil' | 'rpdash' | 'lider' | 'capturaSocios' | 'capturaSportlab' | 'leadsPizarra' | 'leadsSeguimientoRp';
 
 /** Fires a toast the moment any of these error strings goes from null to non-null — so a
  * failed save is noticed immediately near the interaction, not just in a banner that may be
@@ -33,8 +36,10 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const { members, loading, error, updateMember } = useMembers();
-  const { leads, loading: leadsLoading, error: leadsError, addLead, updateLead } = useLeads();
+  const { leads, loading: leadsLoading, error: leadsError, addLead, addLeads, updateLead } = useLeads();
   const { goals, error: goalsError, setGoal } = useLeadGoals();
+  const { rps, addRp } = useRps();
+  const { promotions, addPromotion } = usePromotions();
   const { toasts, push, dismiss } = useToast();
 
   useErrorToasts(push, error, leadsError, goalsError);
@@ -49,10 +54,10 @@ function App() {
       <TopNav screen={screen} onChange={setScreen} />
       <ToastStack toasts={toasts} onDismiss={dismiss} />
 
-      {(screen === 'leads' ? leadsError : error) && (
+      {(screen === 'leadsPizarra' || screen === 'leadsSeguimientoRp' ? leadsError : error) && (
         <div style={{ maxWidth: 1180, margin: '16px auto 0', padding: '0 32px' }}>
           <div style={{ background: '#FBEAEA', border: '1px solid #F4CCCA', color: '#B42318', borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>
-            {friendlyError(screen === 'leads' ? leadsError : error)}
+            {friendlyError(screen === 'leadsPizarra' || screen === 'leadsSeguimientoRp' ? leadsError : error)}
           </div>
         </div>
       )}
@@ -61,15 +66,35 @@ function App() {
         <Home onNavigate={setScreen} />
       )}
 
-      {screen === 'leads' && (
+      {screen === 'leadsSeguimientoRp' && (
         leadsLoading ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>Cargando…</div>
         ) : (
-          <ConcentradoLeads leads={leads} goals={goals} addLead={addLead} updateLead={updateLead} setGoal={setGoal} />
+          <LeadsSeguimientoRp leads={leads} />
         )
       )}
 
-      {screen !== 'home' && screen !== 'leads' && (loading ? (
+      {screen === 'leadsPizarra' && (
+        leadsLoading || loading ? (
+          <div style={{ padding: 48, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>Cargando…</div>
+        ) : (
+          <LeadsPizarra
+            leads={leads}
+            members={members}
+            goals={goals}
+            setGoal={setGoal}
+            addLead={addLead}
+            addLeads={addLeads}
+            updateLead={updateLead}
+            rps={rps}
+            addRp={addRp}
+            promotions={promotions}
+            addPromotion={addPromotion}
+          />
+        )
+      )}
+
+      {screen !== 'home' && screen !== 'leadsPizarra' && screen !== 'leadsSeguimientoRp' && (loading ? (
         <div style={{ padding: 48, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>Cargando…</div>
       ) : (
         <>
@@ -81,7 +106,7 @@ function App() {
             />
           )}
           {screen === 'rpdash' && (
-            <VistaRp members={members} onViewProfile={goToPerfil} />
+            <VistaEjecutivo members={members} onViewProfile={goToPerfil} />
           )}
           {screen === 'lider' && (
             <Concentrado members={members} onViewProfile={goToPerfil} />

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Member } from '../lib/types';
-import { chipStyle, formatDate, initialsOf, riskBadgeStyle, riskLabel, riskScoreColors } from '../lib/style';
+import { chipStyle, formatDate, initialsOf, primaryButtonStyle, riskBadgeStyle, riskLabel, riskScoreColors } from '../lib/style';
 import { getEvaluacion, scoreOrDash } from '../lib/evaluation';
 import { useComments } from '../hooks/useComments';
 import { Card, Eyebrow, EmptyState } from '../components/Card';
@@ -145,7 +145,7 @@ export function VistaSocio({
       </div>
 
       <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: '28px 32px', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-        <div style={{ width: 76, height: 76, borderRadius: 999, background: '#EFEDE9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 600, color: '#4A4640', flex: 'none' }}>
+        <div style={{ width: 76, height: 76, borderRadius: 999, background: '#B9FF66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 700, color: '#191A23', flex: 'none' }}>
           {initialsOf(selected.name)}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1, minWidth: 240 }}>
@@ -169,6 +169,7 @@ export function VistaSocio({
           <div style={chipStyle(selected.app_downloaded)}>{selected.app_downloaded ? '✓' : '–'} APP Descargada</div>
           <div style={chipStyle(selected.sportlab)}>{selected.sportlab ? '✓' : '–'} SPORTLAB</div>
           <div style={chipStyle(selected.keepgoing)}>{selected.keepgoing ? '✓' : '–'} KEEP GOING</div>
+          <div style={chipStyle(selected.performance_day)}>{selected.performance_day ? '✓' : '–'} Performance Day</div>
         </div>
         <div style={{ fontSize: 12, color: '#ACA79E' }}>La encuesta es el punto de entrada al sistema y no puede desactivarse.</div>
       </div>
@@ -287,7 +288,7 @@ export function VistaSocio({
           <div>
             <button
               onClick={handleSaveComment}
-              style={{ background: '#18181B', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              style={primaryButtonStyle()}
             >
               Guardar
             </button>

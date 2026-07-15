@@ -3,13 +3,14 @@ import type { Member } from '../lib/types';
 import { checkStyle, initialsOf, pctColor, pctLabel, pillBtnStyle, riskBadgeStyle, riskLabel, formatDate } from '../lib/style';
 import { Card, Eyebrow, EmptyState } from '../components/Card';
 
-type RpFilter = 'todos' | 'sinapp' | 'sinsportlab' | 'sinkeepgoing' | 'riesgoalto';
+type EjecutivoFilter = 'todos' | 'sinapp' | 'sinsportlab' | 'sinkeepgoing' | 'sinperformanceday' | 'riesgoalto';
 
-const RP_FILTERS: { id: RpFilter; label: string }[] = [
+const EJECUTIVO_FILTERS: { id: EjecutivoFilter; label: string }[] = [
   { id: 'todos', label: 'Todos' },
   { id: 'sinapp', label: 'Sin APP' },
   { id: 'sinsportlab', label: 'Sin SPORTLAB' },
   { id: 'sinkeepgoing', label: 'Sin Keep Going' },
+  { id: 'sinperformanceday', label: 'Sin Performance Day' },
   { id: 'riesgoalto', label: 'Riesgo alto' },
 ];
 
@@ -28,20 +29,22 @@ function KpiCard({ label, count, pct, color, pctLabel }: { label: string; count:
   );
 }
 
-export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewProfile: (id: string) => void }) {
-  const reps = useMemo(
-    () => Array.from(new Set(members.map(m => m.rp).filter((r): r is string => !!r))).sort(),
+/** Post-sale follow-up, grouped by `ejecutivo` — distinct from `rp` (who sold the
+ * membership). Ejecutivo is assigned in Portal Admin once the socio's Form response lands. */
+export function VistaEjecutivo({ members, onViewProfile }: { members: Member[]; onViewProfile: (id: string) => void }) {
+  const ejecutivos = useMemo(
+    () => Array.from(new Set(members.map(m => m.ejecutivo).filter((e): e is string => !!e))).sort(),
     [members]
   );
-  const [currentRp, setCurrentRp] = useState<string>('');
-  const activeRp = currentRp || reps[0] || '';
+  const [currentEjecutivo, setCurrentEjecutivo] = useState<string>('');
+  const activeEjecutivo = currentEjecutivo || ejecutivos[0] || '';
 
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<RpFilter>('todos');
+  const [filter, setFilter] = useState<EjecutivoFilter>('todos');
   const [showAll, setShowAll] = useState(false);
 
-  const rpAll = useMemo(() => members.filter(m => m.rp === activeRp), [members, activeRp]);
-  const total = rpAll.length;
+  const ejecutivoAll = useMemo(() => members.filter(m => m.ejecutivo === activeEjecutivo), [members, activeEjecutivo]);
+  const total = ejecutivoAll.length;
 
   const kpi = (count: number) => {
     const pct = total ? Math.round((count / total) * 100) : 0;
@@ -49,15 +52,17 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
   };
   const kpis = {
     encuesta: { count: total, pct: 100, pctLabel: '100%', color: '#1E7A42' },
-    app: kpi(rpAll.filter(m => m.app_downloaded).length),
-    sportlab: kpi(rpAll.filter(m => m.sportlab).length),
-    keepgoing: kpi(rpAll.filter(m => m.keepgoing).length),
+    app: kpi(ejecutivoAll.filter(m => m.app_downloaded).length),
+    sportlab: kpi(ejecutivoAll.filter(m => m.sportlab).length),
+    keepgoing: kpi(ejecutivoAll.filter(m => m.keepgoing).length),
+    performanceDay: kpi(ejecutivoAll.filter(m => m.performance_day).length),
   };
 
-  let filtered = rpAll;
+  let filtered = ejecutivoAll;
   if (filter === 'sinapp') filtered = filtered.filter(m => !m.app_downloaded);
   else if (filter === 'sinsportlab') filtered = filtered.filter(m => !m.sportlab);
   else if (filter === 'sinkeepgoing') filtered = filtered.filter(m => !m.keepgoing);
+  else if (filter === 'sinperformanceday') filtered = filtered.filter(m => !m.performance_day);
   else if (filter === 'riesgoalto') filtered = filtered.filter(m => riskLabel(m.abandono_score, m.risk) === 'Alto');
   if (search.trim()) {
     const q = search.trim().toLowerCase();
@@ -67,10 +72,10 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
   const limit = 8;
   const visible = showAll ? filtered : filtered.slice(0, limit);
 
-  if (reps.length === 0) {
+  if (ejecutivos.length === 0) {
     return (
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: 32 }}>
-        <EmptyState>Aún no hay socios con un RP asignado. Asígnalos desde Concentrado.</EmptyState>
+        <EmptyState>Aún no hay socios con un ejecutivo asignado. Asígnalos desde Portal Admin.</EmptyState>
       </div>
     );
   }
@@ -79,20 +84,20 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
     <div style={{ maxWidth: 1180, margin: '0 auto', padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-        <div style={{ width: 64, height: 64, borderRadius: 999, background: '#EFEDE9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 600, color: '#4A4640', flex: 'none' }}>
-          {initialsOf(activeRp)}
+        <div style={{ width: 64, height: 64, borderRadius: 999, background: '#B9FF66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#191A23', flex: 'none' }}>
+          {initialsOf(activeEjecutivo)}
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>{activeRp}</div>
+          <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>{activeEjecutivo}</div>
           <div style={{ fontSize: 13, color: '#8B877F' }}>{total} socios asignados</div>
         </div>
-        {reps.length > 1 && (
+        {ejecutivos.length > 1 && (
           <select
-            value={activeRp}
-            onChange={e => { setCurrentRp(e.target.value); setShowAll(false); }}
+            value={activeEjecutivo}
+            onChange={e => { setCurrentEjecutivo(e.target.value); setShowAll(false); }}
             style={{ border: '1px solid #E4E1DC', borderRadius: 8, padding: '9px 12px', fontSize: 13, fontFamily: 'inherit', color: '#2B2926', background: '#fff' }}
           >
-            {reps.map(r => <option key={r} value={r}>{r}</option>)}
+            {ejecutivos.map(e => <option key={e} value={e}>{e}</option>)}
           </select>
         )}
       </div>
@@ -102,6 +107,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
         <KpiCard label="APP Descargada" {...kpis.app} />
         <KpiCard label="SPORTLAB" {...kpis.sportlab} />
         <KpiCard label="KEEP GOING" {...kpis.keepgoing} />
+        <KpiCard label="Performance Day" {...kpis.performanceDay} />
       </div>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -113,7 +119,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
           style={{ minWidth: 220, border: '1px solid #E4E1DC', borderRadius: 8, padding: '9px 14px', fontSize: 14, fontFamily: 'inherit', color: '#2B2926' }}
         />
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {RP_FILTERS.map(f => (
+          {EJECUTIVO_FILTERS.map(f => (
             <button key={f.id} style={pillBtnStyle(filter === f.id)} onClick={() => { setFilter(f.id); setShowAll(false); }}>
               {f.label}
             </button>
@@ -130,6 +136,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
                 <th style={thStyle('center')}>APP</th>
                 <th style={thStyle('center')}>SPORTLAB</th>
                 <th style={thStyle('center')}>KEEP GOING</th>
+                <th style={thStyle('center')}>Performance Day</th>
                 <th style={thStyle('left')}>Riesgo</th>
                 <th style={thStyle('left')}>Acción</th>
               </tr>
@@ -146,6 +153,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.app_downloaded)}>{m.app_downloaded ? '✓' : '✕'}</span></td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.sportlab)}>{m.sportlab ? '✓' : '✕'}</span></td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.keepgoing)}>{m.keepgoing ? '✓' : '✕'}</span></td>
+                  <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.performance_day)}>{m.performance_day ? '✓' : '✕'}</span></td>
                   <td style={{ padding: '14px 20px' }}><span style={riskBadgeStyle(m.risk, m.abandono_score)}>{riskLabel(m.abandono_score, m.risk)}</span></td>
                   <td style={{ padding: '14px 20px' }}>
                     <button
@@ -178,5 +186,5 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
 }
 
 function thStyle(align: 'left' | 'center'): React.CSSProperties {
-  return { textAlign: align, padding: '12px 20px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.03em', color: '#948F86', fontWeight: 500, borderBottom: '1px solid #E4E1DC' };
+  return { textAlign: align, padding: '12px 20px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.03em', color: '#948F86', fontWeight: 500, borderBottom: '2px solid #191A23' };
 }

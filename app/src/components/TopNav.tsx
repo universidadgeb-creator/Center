@@ -4,7 +4,8 @@ import type { Screen } from '../App';
 type Portal = 'leads' | 'socios' | 'admin' | 'deportes';
 
 const PORTAL_OF: Partial<Record<Screen, Portal>> = {
-  leads: 'leads',
+  leadsPizarra: 'leads',
+  leadsSeguimientoRp: 'leads',
   lider: 'socios',
   rpdash: 'socios',
   perfil: 'socios',
@@ -21,11 +22,12 @@ const PORTAL_LABEL: Record<Portal, string> = {
 
 const PORTAL_TABS: Record<Portal, { screen: Screen; label: string }[]> = {
   leads: [
-    { screen: 'leads', label: 'Concentrado' },
+    { screen: 'leadsPizarra', label: 'Concentrado' },
+    { screen: 'leadsSeguimientoRp', label: 'Seguimiento por RP' },
   ],
   socios: [
     { screen: 'lider', label: 'Concentrado' },
-    { screen: 'rpdash', label: 'Seguimiento por RP' },
+    { screen: 'rpdash', label: 'Seguimiento por Ejecutivo' },
     { screen: 'perfil', label: 'Vista Socio' },
   ],
   admin: [

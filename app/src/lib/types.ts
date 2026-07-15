@@ -11,9 +11,11 @@ export interface Member {
 
   member_no: string | null;
   rp: string | null;
+  ejecutivo: string | null;
   app_downloaded: boolean;
   sportlab: boolean;
   keepgoing: boolean;
+  performance_day: boolean;
   reviewed: boolean;
 
   objetivo: string | null;
@@ -53,13 +55,14 @@ export interface StaffComment {
 }
 
 export type MemberPatch = Partial<
-  Pick<Member, 'member_no' | 'rp' | 'app_downloaded' | 'sportlab' | 'keepgoing' | 'reviewed'>
+  Pick<Member, 'member_no' | 'rp' | 'ejecutivo' | 'app_downloaded' | 'sportlab' | 'keepgoing' | 'performance_day' | 'reviewed'>
 >;
 
 export interface Lead {
   id: string;
   fecha_asignacion: string;
   estrategia: string | null;
+  promocion: string | null;
   rp: string | null;
   nombre: string;
   telefono: string | null;
@@ -70,6 +73,10 @@ export interface Lead {
   tour: boolean;
   fecha_cita: string | null;
   app_downloaded: boolean;
+  plan: string | null;
+  tipo_alta: string | null;
+  monto_sin_iva: number | null;
+  monto_con_iva: number | null;
 
   fecha_cierre: string | null;
   member_id: string | null;
@@ -79,10 +86,14 @@ export interface Lead {
 }
 
 export type LeadInsert = Pick<Lead, 'nombre'> &
-  Partial<Pick<Lead, 'telefono' | 'estrategia' | 'rp' | 'fecha_asignacion' | 'comentarios'>>;
+  Partial<Pick<Lead, 'telefono' | 'correo' | 'estrategia' | 'promocion' | 'rp' | 'fecha_asignacion' | 'comentarios'>>;
 
 export type LeadPatch = Partial<
-  Pick<Lead, 'status' | 'tour' | 'fecha_cita' | 'comentarios' | 'rp' | 'estrategia' | 'telefono' | 'correo' | 'fecha_cierre' | 'app_downloaded' | 'member_id'>
+  Pick<Lead,
+    | 'status' | 'tour' | 'fecha_cita' | 'comentarios' | 'rp' | 'estrategia' | 'promocion'
+    | 'telefono' | 'correo' | 'fecha_cierre' | 'app_downloaded' | 'member_id'
+    | 'plan' | 'tipo_alta' | 'monto_sin_iva' | 'monto_con_iva'
+  >
 >;
 
 export interface LeadGoal {
@@ -92,4 +103,17 @@ export interface LeadGoal {
   meta_altas: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface Rp {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+export interface Promotion {
+  id: string;
+  label: string;
+  color: string;
+  created_at: string;
 }

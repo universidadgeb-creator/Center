@@ -22,6 +22,12 @@ table {
   border-collapse: collapse;
 }
 
+/* Subtle brand-accent wash on row hover — a color touch on the data tables without
+   changing their resting (neutral) legibility. */
+.data-table tbody tr:hover {
+  background: rgba(185, 255, 102, 0.14);
+}
+
 /* Tighter cell padding on tablet widths so the socio tables (Concentrado, Vista RP) need
    less horizontal scroll — the portal is required to stay usable down to 768px. */
 @media (max-width: 900px) {

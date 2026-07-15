@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { Risk } from './types';
+import { color as tokenColor } from './tokens';
 
 export function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -126,8 +127,8 @@ export function tabBtnStyle(active: boolean): CSSProperties {
     fontWeight: 600,
     border: 'none',
     cursor: 'pointer',
-    background: active ? '#18181B' : 'transparent',
-    color: active ? '#FFFFFF' : '#57534E',
+    background: active ? tokenColor.accent : 'transparent',
+    color: active ? tokenColor.accentInk : '#57534E',
     whiteSpace: 'nowrap',
   };
 }
@@ -138,10 +139,27 @@ export function pillBtnStyle(active: boolean): CSSProperties {
     borderRadius: 999,
     fontSize: 13,
     fontWeight: 500,
-    border: active ? '1px solid #18181B' : '1px solid #E4E1DC',
+    border: active ? `1px solid ${tokenColor.accentInk}` : '1px solid #E4E1DC',
     cursor: 'pointer',
-    background: active ? '#18181B' : '#FFFFFF',
-    color: active ? '#FFFFFF' : '#57534E',
+    background: active ? tokenColor.accent : '#FFFFFF',
+    color: active ? tokenColor.accentInk : '#57534E',
+  };
+}
+
+/** Primary CTA button — the brand-accent block from the Positivus-style references
+ * (neon green fill, near-black text) used for the main action on a screen ("Guardar",
+ * "+ Nuevo lead", etc.). Not used for table/row-level actions, which stay neutral. */
+export function primaryButtonStyle(disabled = false): CSSProperties {
+  return {
+    background: tokenColor.accent,
+    color: tokenColor.accentInk,
+    border: 'none',
+    padding: '10px 20px',
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.5 : 1,
   };
 }
 
