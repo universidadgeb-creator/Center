@@ -34,6 +34,18 @@ export function riskColors(risk: Risk | null | undefined, score?: number | null)
   return riskScoreColors(score);
 }
 
+/**
+ * Derives the displayed risk label from the same score thresholds riskScoreColors uses, so
+ * the badge text and its color can never disagree. Falls back to the stored `risk` category
+ * only when there's no score yet (e.g. evaluation not run).
+ */
+export function riskLabel(score: number | null | undefined, fallback: Risk | null | undefined): string {
+  if (score === null || score === undefined) return fallback ?? 'Sin evaluar';
+  if (score >= 9) return 'Bajo';
+  if (score >= 7) return 'Medio';
+  return 'Alto';
+}
+
 export function riskBadgeStyle(risk: Risk | null | undefined, score?: number | null): CSSProperties {
   const c = riskColors(risk, score);
   return {
@@ -47,12 +59,32 @@ export function riskBadgeStyle(risk: Risk | null | undefined, score?: number | n
   };
 }
 
-/** ≥70% blue · ≥40% yellow · <40% red · 100% green */
+/**
+ * ≥70% blue · ≥40% yellow · <40% amber · 100% green.
+ * The bottom tier intentionally stays out of the red family (`#B42318`) — that red is
+ * reserved for "riesgo alto" (see riskColors below), so a low adoption % never reads as
+ * an abandonment-risk alert.
+ */
 export function tierColor(pct: number): string {
   if (pct >= 100) return '#1E7A42';
   if (pct >= 70) return '#1D4ED8';
   if (pct >= 40) return '#B45309';
-  return '#B42318';
+  return '#9A5B12';
+}
+
+/**
+ * tierColor()/label but neutral when there's no data yet (total=0) — otherwise a brand-new
+ * branch or month with zero members would render every KPI in tierColor's alarm red, which
+ * reads as "doing badly" instead of "nothing to show yet".
+ */
+export function pctColor(count: number, total: number): string {
+  if (total === 0) return '#ACA79E';
+  return tierColor(Math.round((count / total) * 100));
+}
+
+export function pctLabel(count: number, total: number): string {
+  if (total === 0) return '—';
+  return `${Math.round((count / total) * 100)}%`;
 }
 
 export function checkStyle(active: boolean): CSSProperties {

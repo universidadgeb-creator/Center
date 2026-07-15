@@ -60,7 +60,7 @@ export function Home({ onNavigate }: { onNavigate: (s: Screen) => void }) {
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
         <HomeColumn title="Leads" subtitle="Prospectos antes de la venta.">
           <HomeCard
-            label="Concentrado"
+            label="Concentrado de leads"
             description="Metas por RP, embudo lead → tour → alta, y seguimiento de cada lead."
             onClick={() => onNavigate('leads')}
           />
@@ -68,7 +68,7 @@ export function Home({ onNavigate }: { onNavigate: (s: Screen) => void }) {
 
         <HomeColumn title="Socios" subtitle="Ya convertidos, post-venta.">
           <HomeCard
-            label="Concentrado"
+            label="Concentrado de socios"
             description="Indicadores generales, filtros por mes y panel de socios."
             onClick={() => onNavigate('lider')}
           />

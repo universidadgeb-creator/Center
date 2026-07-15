@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Member } from '../lib/types';
-import { chipStyle, formatDate, initialsOf, riskBadgeStyle, riskScoreColors } from '../lib/style';
+import { chipStyle, formatDate, initialsOf, riskBadgeStyle, riskLabel, riskScoreColors } from '../lib/style';
 import { getEvaluacion, scoreOrDash } from '../lib/evaluation';
 import { useComments } from '../hooks/useComments';
+import { Card, Eyebrow, EmptyState } from '../components/Card';
 
 const fieldLabel: React.CSSProperties = {
   fontSize: 12, fontWeight: 500, letterSpacing: '0.03em', textTransform: 'uppercase',
@@ -10,8 +11,6 @@ const fieldLabel: React.CSSProperties = {
 };
 const fieldValue: React.CSSProperties = { fontSize: 15, lineHeight: 1.5, color: '#2B2926' };
 const fieldRow: React.CSSProperties = { padding: '14px 0', borderBottom: '1px solid #EEEBE5' };
-const card: React.CSSProperties = { background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 6 };
-const cardLabel: React.CSSProperties = { fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#948F86' };
 
 function IntakeField({ label, value }: { label: string; value: string | null }) {
   return (
@@ -43,6 +42,9 @@ export function VistaSocio({
   onSelectMember: (id: string) => void;
 }) {
   const [search, setSearch] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const searchBoxRef = useRef<HTMLDivElement | null>(null);
 
   const selected = useMemo(
     () => members.find(m => m.id === selectedMemberId) ?? members[0] ?? null,
@@ -55,15 +57,47 @@ export function VistaSocio({
     return members.filter(m => m.name.toLowerCase().includes(q)).slice(0, 6);
   }, [members, search]);
 
+  useEffect(() => setActiveIndex(-1), [search]);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const selectMatch = (id: string) => {
+    onSelectMember(id);
+    setSearch('');
+    setDropdownOpen(false);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!dropdownOpen || matches.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(i => (i + 1) % matches.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(i => (i - 1 + matches.length) % matches.length);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < matches.length) selectMatch(matches[activeIndex].id);
+    } else if (e.key === 'Escape') {
+      setDropdownOpen(false);
+    }
+  };
+
   const { comments, addComment } = useComments(selected?.id ?? null);
   const [newComment, setNewComment] = useState('');
 
   if (!selected) {
     return (
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: 32 }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 32, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>
-          Aún no hay socios cargados. Se sincronizarán automáticamente desde el formulario de alta.
-        </div>
+        <EmptyState>Aún no hay socios cargados. Se sincronizarán automáticamente desde el formulario de alta.</EmptyState>
       </div>
     );
   }
@@ -80,21 +114,24 @@ export function VistaSocio({
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div ref={searchBoxRef} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 0 }}>
         <input
           type="text"
           placeholder="Buscar socio por nombre…"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => { setSearch(e.target.value); setDropdownOpen(true); }}
+          onFocus={() => setDropdownOpen(true)}
+          onKeyDown={handleSearchKeyDown}
           style={{ border: '1px solid #E4E1DC', borderRadius: 8, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: '#2B2926', maxWidth: 340 }}
         />
-        {search.trim().length > 0 && (
+        {dropdownOpen && search.trim().length > 0 && (
           <div style={{ position: 'absolute', top: 44, left: 0, width: 340, background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.06)', zIndex: 15, overflow: 'hidden' }}>
-            {matches.map(m => (
+            {matches.map((m, i) => (
               <div
                 key={m.id}
-                onClick={() => { onSelectMember(m.id); setSearch(''); }}
-                style={{ padding: '10px 14px', borderBottom: '1px solid #EEEBE5', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 2 }}
+                onClick={() => selectMatch(m.id)}
+                onMouseEnter={() => setActiveIndex(i)}
+                style={{ padding: '10px 14px', borderBottom: '1px solid #EEEBE5', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 2, background: i === activeIndex ? '#F4F2ED' : 'transparent' }}
               >
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#2B2926' }}>{m.name}</span>
                 <span style={{ fontSize: 11, color: '#8B877F' }}>{m.member_no || 'Sin no. de socio'} · {m.rp || 'Sin RP'}</span>
@@ -140,46 +177,46 @@ export function VistaSocio({
         <div style={{ fontSize: 15, fontWeight: 600, color: '#18181B' }}>Evaluación</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
 
-          <div style={card}>
-            <div style={cardLabel}>Enfoque</div>
+          <Card gap={6}>
+            <Eyebrow>Enfoque</Eyebrow>
             <div style={{ fontSize: 30, fontWeight: 600, color: '#18181B' }}>
               {scoreOrDash(evaluacion.enfoque.score)}<span style={{ fontSize: 15, color: '#ACA79E', fontWeight: 500 }}>/10</span>
             </div>
             <div style={{ fontSize: 12, color: '#8B877F' }}>{evaluacion.enfoque.label || '—'}</div>
-          </div>
+          </Card>
 
-          <div style={card}>
-            <div style={cardLabel}>Adherencia</div>
+          <Card gap={6}>
+            <Eyebrow>Adherencia</Eyebrow>
             <div style={{ fontSize: 30, fontWeight: 600, color: '#18181B' }}>
               {scoreOrDash(evaluacion.adherencia.score)}<span style={{ fontSize: 15, color: '#ACA79E', fontWeight: 500 }}>/10</span>
             </div>
-          </div>
+          </Card>
 
-          <div style={card}>
-            <div style={cardLabel}>Frecuencia</div>
+          <Card gap={6}>
+            <Eyebrow>Frecuencia</Eyebrow>
             <div style={{ fontSize: 30, fontWeight: 600, color: '#18181B' }}>
               {scoreOrDash(evaluacion.frecuencia.score)}<span style={{ fontSize: 15, color: '#ACA79E', fontWeight: 500 }}>/10</span>
             </div>
-          </div>
+          </Card>
 
-          <div style={card}>
-            <div style={cardLabel}>Condición</div>
+          <Card gap={6}>
+            <Eyebrow>Condición</Eyebrow>
             <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>{evaluacion.condicion.level || '—'}</div>
             <div style={{ fontSize: 12, color: '#8B877F' }}>Puntuación: {scoreOrDash(evaluacion.condicion.score)}/10</div>
-          </div>
+          </Card>
 
-          <div style={{ ...card, gap: 8 }}>
-            <div style={cardLabel}>Riesgo de abandono</div>
+          <Card gap={8}>
+            <Eyebrow>Riesgo de abandono</Eyebrow>
             <div style={{ fontSize: 30, fontWeight: 600, color: riskScoreColors(evaluacion.riesgo.score).text }}>
               {scoreOrDash(evaluacion.riesgo.score)}<span style={{ fontSize: 15, color: '#ACA79E', fontWeight: 500 }}>/10</span>
             </div>
-            <span style={riskBadgeStyle(selected.risk, evaluacion.riesgo.score)}>{selected.risk || 'Sin evaluar'}</span>
-          </div>
+            <span style={riskBadgeStyle(selected.risk, evaluacion.riesgo.score)}>{riskLabel(evaluacion.riesgo.score, selected.risk)}</span>
+          </Card>
 
-          <div style={card}>
-            <div style={cardLabel}>Nivel general</div>
+          <Card gap={6}>
+            <Eyebrow>Nivel general</Eyebrow>
             <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>{evaluacion.nivelGeneral.label || '—'}</div>
-          </div>
+          </Card>
 
         </div>
       </div>

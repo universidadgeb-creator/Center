@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TopNav } from './components/TopNav';
+import { ToastStack } from './components/Toast';
 import { Home } from './screens/Home';
 import { VistaSocio } from './screens/VistaSocio';
 import { VistaRp } from './screens/VistaRp';
@@ -10,15 +11,33 @@ import { ConcentradoLeads } from './screens/ConcentradoLeads';
 import { useMembers } from './hooks/useMembers';
 import { useLeads } from './hooks/useLeads';
 import { useLeadGoals } from './hooks/useLeadGoals';
+import { useToast } from './hooks/useToast';
+import { friendlyError } from './lib/errors';
 
 export type Screen = 'home' | 'perfil' | 'rpdash' | 'lider' | 'capturaSocios' | 'capturaSportlab' | 'leads';
+
+/** Fires a toast the moment any of these error strings goes from null to non-null — so a
+ * failed save is noticed immediately near the interaction, not just in a banner that may be
+ * scrolled out of view. */
+function useErrorToasts(push: (message: string) => void, ...errors: (string | null)[]) {
+  const prev = useRef<(string | null)[]>(errors.map(() => null));
+  useEffect(() => {
+    errors.forEach((err, i) => {
+      if (err && err !== prev.current[i]) push(friendlyError(err));
+      prev.current[i] = err;
+    });
+  }, [push, ...errors]);
+}
 
 function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const { members, loading, error, updateMember } = useMembers();
   const { leads, loading: leadsLoading, error: leadsError, addLead, updateLead } = useLeads();
-  const { goals, setGoal } = useLeadGoals();
+  const { goals, error: goalsError, setGoal } = useLeadGoals();
+  const { toasts, push, dismiss } = useToast();
+
+  useErrorToasts(push, error, leadsError, goalsError);
 
   const goToPerfil = (memberId: string) => {
     setSelectedMemberId(memberId);
@@ -28,11 +47,12 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', background: '#FAFAF9' }}>
       <TopNav screen={screen} onChange={setScreen} />
+      <ToastStack toasts={toasts} onDismiss={dismiss} />
 
       {(screen === 'leads' ? leadsError : error) && (
         <div style={{ maxWidth: 1180, margin: '16px auto 0', padding: '0 32px' }}>
           <div style={{ background: '#FBEAEA', border: '1px solid #F4CCCA', color: '#B42318', borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>
-            Error cargando datos: {screen === 'leads' ? leadsError : error}
+            {friendlyError(screen === 'leads' ? leadsError : error)}
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import type { Member } from '../lib/types';
+import { EmptyState } from './Card';
 
 type Tab = 'pendientes' | 'completos';
 
@@ -86,9 +87,7 @@ export function RoleQueue({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {list.length === 0 && (
-          <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 32, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>
-            {tab === 'pendientes' ? emptyPendingMessage : 'Aún no hay socios completos.'}
-          </div>
+          <EmptyState>{tab === 'pendientes' ? emptyPendingMessage : 'Aún no hay socios completos.'}</EmptyState>
         )}
         {list.map(m => renderRow(m))}
       </div>

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { Lead, LeadGoal, LeadInsert, LeadPatch } from '../lib/types';
-import { captureInputStyle, formatDate, pillBtnStyle, tierColor } from '../lib/style';
+import { captureInputStyle, formatDate, pctColor, pctLabel, pillBtnStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
 import { LEAD_ESTRATEGIAS, LEAD_STATUSES, isClosedStatus, isWonStatus } from '../lib/leadStatus';
+import { Card, Eyebrow, EmptyState } from '../components/Card';
 
 const GENERAL_RP = '';
 
@@ -24,7 +25,7 @@ function NewLeadForm({ onAdd, onClose, reps }: { onAdd: (lead: LeadInsert) => vo
   };
 
   return (
-    <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <Card gap={12}>
       <div style={{ fontSize: 14, fontWeight: 600, color: '#18181B' }}>Nuevo lead</div>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <input type="text" placeholder="Nombre*" value={nombre} onChange={e => setNombre(e.target.value)} style={captureInputStyle()} />
@@ -53,13 +54,13 @@ function NewLeadForm({ onAdd, onClose, reps }: { onAdd: (lead: LeadInsert) => vo
           Cancelar
         </button>
       </div>
-    </div>
+    </Card>
   );
 }
 
 function LeadRow({ lead, updateLead }: { lead: Lead; updateLead: (id: string, patch: LeadPatch) => void }) {
   return (
-    <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <Card gap={12} style={{ padding: '16px 20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
         <div>
           <div style={{ fontWeight: 600, color: '#2B2926' }}>{lead.nombre}</div>
@@ -100,12 +101,11 @@ function LeadRow({ lead, updateLead }: { lead: Lead; updateLead: (id: string, pa
           style={{ ...captureInputStyle(), flex: '2 1 240px' }}
         />
       </div>
-    </div>
+    </Card>
   );
 }
 
 function MetaRow({ label, meta, real, onSaveMeta }: { label: string; meta: number; real: number; onSaveMeta: (value: number) => void }) {
-  const pct = meta ? Math.round((real / meta) * 100) : 0;
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'center' }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: '#2B2926' }}>{label}</div>
@@ -124,7 +124,7 @@ function MetaRow({ label, meta, real, onSaveMeta }: { label: string; meta: numbe
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 110, justifyContent: 'flex-end' }}>
         <span style={{ fontSize: 15, fontWeight: 600, color: '#18181B' }}>{real}</span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: tierColor(pct) }}>{pct}%</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: pctColor(real, meta) }}>{pctLabel(real, meta)}</span>
       </div>
     </div>
   );
@@ -182,8 +182,6 @@ export function ConcentradoLeads({
   const totalLeads = scoped.length;
   const totalTour = scoped.filter(l => l.tour).length;
   const totalVenta = scoped.filter(l => isWonStatus(l.status)).length;
-  const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100) : 0);
-
   const goalsByRp = useMemo(() => {
     const map = new Map<string, number>();
     goals.filter(g => g.month === selectedMonth).forEach(g => map.set(g.rp, g.meta_altas));
@@ -218,14 +216,12 @@ export function ConcentradoLeads({
       </div>
 
       {selectedMonth === 'todos' ? (
-        <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: '16px 20px', fontSize: 13, color: '#8B877F' }}>
-          Selecciona un mes específico para definir y ver metas por RP.
-        </div>
+        <Card style={{ padding: '16px 20px' }}>
+          <div style={{ fontSize: 13, color: '#8B877F' }}>Selecciona un mes específico para definir y ver metas por RP.</div>
+        </Card>
       ) : (
-        <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#948F86' }}>
-            Metas de altas · {formatMonthLabel(selectedMonth)}
-          </div>
+        <Card gap={14}>
+          <Eyebrow>Metas de altas · {formatMonthLabel(selectedMonth)}</Eyebrow>
           <MetaRow label="General" meta={generalMeta} real={totalVenta} onSaveMeta={v => setGoal(selectedMonth, GENERAL_RP, v)} />
           {repMetaRows.map(r => (
             <MetaRow key={r.rp} label={r.rp} meta={r.meta} real={r.real} onSaveMeta={v => setGoal(selectedMonth, r.rp, v)} />
@@ -233,28 +229,28 @@ export function ConcentradoLeads({
           {repMetaRows.length === 0 && (
             <div style={{ fontSize: 12, color: '#ACA79E' }}>Aún no hay leads con RP asignado este mes.</div>
           )}
-        </div>
+        </Card>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#948F86' }}>Leads totales</div>
+        <Card>
+          <Eyebrow>Leads totales</Eyebrow>
           <div style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{totalLeads}</div>
-        </div>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#948F86' }}>% Lead → Tour</div>
+        </Card>
+        <Card>
+          <Eyebrow>% Lead → Tour</Eyebrow>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{totalTour}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: tierColor(pct(totalTour, totalLeads)) }}>{pct(totalTour, totalLeads)}%</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: pctColor(totalTour, totalLeads) }}>{pctLabel(totalTour, totalLeads)}</span>
           </div>
-        </div>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#948F86' }}>% Tour → Alta</div>
+        </Card>
+        <Card>
+          <Eyebrow>% Tour → Alta</Eyebrow>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{totalVenta}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: tierColor(pct(totalVenta, totalTour)) }}>{pct(totalVenta, totalTour)}%</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: pctColor(totalVenta, totalTour) }}>{pctLabel(totalVenta, totalTour)}</span>
           </div>
-        </div>
+        </Card>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
@@ -284,9 +280,7 @@ export function ConcentradoLeads({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {list.length === 0 && (
-          <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 32, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>
-            {tab === 'proceso' ? 'No hay leads en proceso.' : 'Aún no hay leads cerrados.'}
-          </div>
+          <EmptyState>{tab === 'proceso' ? 'No hay leads en proceso.' : 'Aún no hay leads cerrados.'}</EmptyState>
         )}
         {list.map(lead => <LeadRow key={lead.id} lead={lead} updateLead={updateLead} />)}
       </div>

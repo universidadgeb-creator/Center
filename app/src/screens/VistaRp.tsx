@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Member } from '../lib/types';
-import { checkStyle, initialsOf, pillBtnStyle, riskBadgeStyle, tierColor, formatDate } from '../lib/style';
+import { checkStyle, initialsOf, pctColor, pctLabel, pillBtnStyle, riskBadgeStyle, riskLabel, formatDate } from '../lib/style';
+import { Card, Eyebrow, EmptyState } from '../components/Card';
 
 type RpFilter = 'todos' | 'sinapp' | 'sinsportlab' | 'sinkeepgoing' | 'riesgoalto';
 
@@ -14,8 +15,8 @@ const RP_FILTERS: { id: RpFilter; label: string }[] = [
 
 function KpiCard({ label, count, pct, color, pctLabel }: { label: string; count: number; pct: number; color: string; pctLabel: string }) {
   return (
-    <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#948F86' }}>{label}</div>
+    <Card>
+      <Eyebrow>{label}</Eyebrow>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{count}</span>
         <span style={{ fontSize: 14, fontWeight: 600, color }}>{pctLabel}</span>
@@ -23,7 +24,7 @@ function KpiCard({ label, count, pct, color, pctLabel }: { label: string; count:
       <div style={{ height: 6, borderRadius: 999, background: '#EEEBE5', overflow: 'hidden' }}>
         <div style={{ height: '100%', background: color, width: `${pct}%` }} />
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -44,7 +45,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
 
   const kpi = (count: number) => {
     const pct = total ? Math.round((count / total) * 100) : 0;
-    return { count, pct, pctLabel: `${pct}%`, color: tierColor(pct) };
+    return { count, pct, pctLabel: pctLabel(count, total), color: pctColor(count, total) };
   };
   const kpis = {
     encuesta: { count: total, pct: 100, pctLabel: '100%', color: '#1E7A42' },
@@ -57,21 +58,19 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
   if (filter === 'sinapp') filtered = filtered.filter(m => !m.app_downloaded);
   else if (filter === 'sinsportlab') filtered = filtered.filter(m => !m.sportlab);
   else if (filter === 'sinkeepgoing') filtered = filtered.filter(m => !m.keepgoing);
-  else if (filter === 'riesgoalto') filtered = filtered.filter(m => m.risk === 'Alto');
+  else if (filter === 'riesgoalto') filtered = filtered.filter(m => riskLabel(m.abandono_score, m.risk) === 'Alto');
   if (search.trim()) {
     const q = search.trim().toLowerCase();
     filtered = filtered.filter(m => m.name.toLowerCase().includes(q));
   }
 
-  const limit = 3;
+  const limit = 8;
   const visible = showAll ? filtered : filtered.slice(0, limit);
 
   if (reps.length === 0) {
     return (
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: 32 }}>
-        <div style={{ background: '#FFFFFF', border: '1px solid #E4E1DC', borderRadius: 10, padding: 32, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>
-          Aún no hay socios con un RP asignado. Asígnalos desde Concentrado.
-        </div>
+        <EmptyState>Aún no hay socios con un RP asignado. Asígnalos desde Concentrado.</EmptyState>
       </div>
     );
   }
@@ -124,7 +123,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
 
       <div style={{ background: '#fff', border: '1px solid #E4E1DC', borderRadius: 10, overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', fontSize: 14 }}>
+          <table className="data-table" style={{ width: '100%', fontSize: 14 }}>
             <thead>
               <tr style={{ background: '#FAFAF9' }}>
                 <th style={thStyle('left')}>Socio</th>
@@ -147,7 +146,7 @@ export function VistaRp({ members, onViewProfile }: { members: Member[]; onViewP
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.app_downloaded)}>{m.app_downloaded ? '✓' : '✕'}</span></td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.sportlab)}>{m.sportlab ? '✓' : '✕'}</span></td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}><span style={checkStyle(m.keepgoing)}>{m.keepgoing ? '✓' : '✕'}</span></td>
-                  <td style={{ padding: '14px 20px' }}><span style={riskBadgeStyle(m.risk, m.abandono_score)}>{m.risk || 'Sin evaluar'}</span></td>
+                  <td style={{ padding: '14px 20px' }}><span style={riskBadgeStyle(m.risk, m.abandono_score)}>{riskLabel(m.abandono_score, m.risk)}</span></td>
                   <td style={{ padding: '14px 20px' }}>
                     <button
                       onClick={() => onViewProfile(m.id)}
