@@ -33,7 +33,10 @@ export function DrawerField({ label, children }: { label: string; children: Reac
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#948F86' }}>{label}</div>
-      {children}
+      {/* Plain block wrapper, not a flex item: inputs reuse captureInputStyle() (built for
+       * horizontal filter bars), whose `flex: 1 1 160px` would otherwise apply along this
+       * column's main axis and stretch each field to fill the drawer's height. */}
+      <div>{children}</div>
     </div>
   );
 }

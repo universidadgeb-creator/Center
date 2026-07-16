@@ -70,7 +70,7 @@ function App() {
         leadsLoading ? (
           <div style={{ padding: 48, textAlign: 'center', color: '#8B877F', fontSize: 14 }}>Cargando…</div>
         ) : (
-          <LeadsSeguimientoRp leads={leads} />
+          <LeadsSeguimientoRp leads={leads} goals={goals} setGoal={setGoal} />
         )
       )}
 
@@ -81,8 +81,6 @@ function App() {
           <LeadsPizarra
             leads={leads}
             members={members}
-            goals={goals}
-            setGoal={setGoal}
             addLead={addLead}
             addLeads={addLeads}
             updateLead={updateLead}

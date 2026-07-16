@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import type { Lead, LeadGoal, LeadInsert, LeadPatch, Member, Promotion, Rp } from '../lib/types';
+import type { Lead, LeadInsert, LeadPatch, Member, Promotion, Rp } from '../lib/types';
 import { captureInputStyle, checkButtonStyle, checkStyle, formatDate, pctColor, pctLabel, pillBtnStyle, primaryButtonStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
 import { LEAD_ESTRATEGIAS, LEAD_STATUSES, PLAN_OPTIONS, TIPO_ALTA_OPTIONS, isClosedStatus, isWonStatus, leadStatusColor } from '../lib/leadStatus';
@@ -9,33 +9,6 @@ import { Card, Eyebrow, EmptyState } from '../components/Card';
 import { MagnitudeBar } from '../components/Chart';
 import { AddOption } from '../components/AddOption';
 import { Drawer, DrawerField } from '../components/Drawer';
-
-const GENERAL_RP = '';
-
-function MetaRow({ label, meta, real, onSaveMeta }: { label: string; meta: number; real: number; onSaveMeta: (value: number) => void }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'center' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#2B2926' }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 11, color: '#8B877F' }}>Meta</span>
-        <input
-          type="number"
-          min={0}
-          defaultValue={meta}
-          onBlur={e => {
-            const v = Number(e.target.value) || 0;
-            if (v !== meta) onSaveMeta(v);
-          }}
-          style={{ width: 70, border: '1px solid #E4E1DC', borderRadius: 6, padding: '5px 8px', fontSize: 13, fontFamily: 'inherit', color: '#2B2926' }}
-        />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 110, justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#18181B' }}>{real}</span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: pctColor(real, meta) }}>{pctLabel(real, meta)}</span>
-      </div>
-    </div>
-  );
-}
 
 /** Compact label+count+pct row with a colored identity dot — used for distributions with too
  * many categories (status has 15, estrategia has 11) to read well as a chart. */
@@ -49,8 +22,9 @@ function DistributionRow({ label, count, total, color }: { label: string; count:
   );
 }
 
-const cellStyle: React.CSSProperties = { padding: '10px 12px', whiteSpace: 'nowrap' };
-const inputCellStyle: React.CSSProperties = { ...captureInputStyle(), minWidth: 130, flex: 'none' };
+const cellStyle: React.CSSProperties = { padding: '6px 6px', whiteSpace: 'nowrap' };
+const thStyleBase: React.CSSProperties = { padding: '8px 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#948F86', fontWeight: 500, borderBottom: '2px solid #191A23', whiteSpace: 'normal', lineHeight: 1.2 };
+const inputCellStyle: React.CSSProperties = { ...captureInputStyle(), padding: '6px 8px', fontSize: 12, minWidth: 0, width: '100%', flex: 'none' };
 const today = () => new Date().toISOString().slice(0, 10);
 
 function promotionColor(promotions: Promotion[], label: string | null): string | undefined {
@@ -283,6 +257,7 @@ function PizarraRow({
   const appDescargada = lead.member_id ? !!member?.app_downloaded : lead.app_downloaded;
   const expedienteCompleto = encuestaHecha && appDescargada;
   const needsSurvey = isWonStatus(lead.status) && !lead.member_id;
+  const isPendiente = lead.status === 'Nuevo';
 
   const toggleTour = () => {
     const turningOn = !lead.tour;
@@ -293,9 +268,9 @@ function PizarraRow({
   };
 
   return (
-    <tr style={{ borderBottom: '1px solid #EEEBE5', background: needsSurvey ? '#FDF3DF' : undefined }}>
+    <tr style={{ borderBottom: '1px solid #EEEBE5', background: needsSurvey ? '#FDF3DF' : isPendiente ? '#EAF1FB' : undefined }}>
       <td style={cellStyle}>{formatDate(lead.fecha_asignacion)}</td>
-      <td style={{ ...cellStyle, fontWeight: 600, color: '#1D4ED8', cursor: 'pointer' }} onClick={onOpenDetail}>{lead.nombre}</td>
+      <td style={{ ...cellStyle, fontWeight: 600, color: '#1D4ED8', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis' }} onClick={onOpenDetail}>{lead.nombre}</td>
       <td style={cellStyle}>
         <input
           type="text"
@@ -308,7 +283,7 @@ function PizarraRow({
         <select
           value={lead.status}
           onChange={e => updateLead(lead.id, { status: e.target.value, fecha_cierre: isClosedStatus(e.target.value) ? today() : null })}
-          style={{ ...inputCellStyle, minWidth: 210, color: leadStatusColor(lead.status), fontWeight: 600 }}
+          style={{ ...inputCellStyle, color: leadStatusColor(lead.status), fontWeight: 600 }}
         >
           {LEAD_STATUSES.map(s => <option key={s} value={s} style={{ color: leadStatusColor(s) }}>{s}</option>)}
         </select>
@@ -329,9 +304,9 @@ function PizarraRow({
       <td style={{ ...cellStyle, textAlign: 'center' }}>
         <span style={checkStyle(expedienteCompleto)}>{expedienteCompleto ? '✓' : '✕'}</span>
       </td>
-      <td style={{ ...cellStyle, textAlign: 'center' }}>
+      <td style={{ ...cellStyle, textAlign: 'center', fontSize: 11 }}>
         {needsSurvey ? (
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#92610A' }}>Falta encuesta</span>
+          <span style={{ fontWeight: 600, color: '#92610A' }}>Falta</span>
         ) : (
           <span style={checkStyle(encuestaHecha)}>{encuestaHecha ? '✓' : '✕'}</span>
         )}
@@ -349,13 +324,21 @@ function PizarraRow({
   );
 }
 
-const HEADERS = ['Fecha de asignación', 'Nombre', 'Teléfono', 'Status', 'Plan', 'Tour', 'Expediente completo', 'Encuesta hecha', 'APP descargada'];
+const COLUMNS: { label: string; width: number }[] = [
+  { label: 'Fecha', width: 66 },
+  { label: 'Nombre', width: 150 },
+  { label: 'Teléfono', width: 90 },
+  { label: 'Status', width: 140 },
+  { label: 'Plan', width: 66 },
+  { label: 'Tour', width: 44 },
+  { label: 'Expediente', width: 66 },
+  { label: 'Encuesta', width: 56 },
+  { label: 'APP', width: 50 },
+];
 
 export function LeadsPizarra({
   leads,
   members,
-  goals,
-  setGoal,
   addLead,
   addLeads,
   updateLead,
@@ -368,8 +351,6 @@ export function LeadsPizarra({
 }: {
   leads: Lead[];
   members: Member[];
-  goals: LeadGoal[];
-  setGoal: (month: string, rp: string, meta_altas: number) => void;
   addLead: (lead: LeadInsert) => void;
   addLeads: (leads: LeadInsert[]) => Promise<number>;
   updateLead: (id: string, patch: LeadPatch) => void;
@@ -425,19 +406,6 @@ export function LeadsPizarra({
   const totalApp = scopedWithFlags.filter(f => f.appDescargada).length;
   const totalExpediente = scopedWithFlags.filter(f => f.expedienteCompleto).length;
 
-  const goalsByRp = useMemo(() => {
-    const map = new Map<string, number>();
-    goals.filter(g => g.month === selectedMonth).forEach(g => map.set(g.rp, g.meta_altas));
-    return map;
-  }, [goals, selectedMonth]);
-
-  const repMetaRows = allReps.map(rp => ({
-    rp,
-    meta: goalsByRp.get(rp) ?? 0,
-    real: scoped.filter(l => l.rp === rp && isWonStatus(l.status)).length,
-  }));
-  const generalMeta = goalsByRp.get(GENERAL_RP) ?? 0;
-
   const statusDist = LEAD_STATUSES
     .map(s => ({ label: s, count: scoped.filter(l => l.status === s).length, color: leadStatusColor(s) }))
     .filter(s => s.count > 0);
@@ -474,14 +442,18 @@ export function LeadsPizarra({
   const [rpFilter, setRpFilter] = useState('todos');
   const [tab, setTab] = useState<'proceso' | 'cerrados'>('proceso');
   const [showForm, setShowForm] = useState(false);
+  const [pendientesOnly, setPendientesOnly] = useState(false);
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     let rows = leads;
     if (rpFilter !== 'todos') rows = rows.filter(l => l.rp === rpFilter);
     const q = search.trim().toLowerCase();
     if (q) rows = rows.filter(l => l.nombre.toLowerCase().includes(q));
     return rows;
   }, [leads, rpFilter, search]);
+
+  const pendientesCount = baseFiltered.filter(l => l.status === 'Nuevo').length;
+  const filtered = pendientesOnly ? baseFiltered.filter(l => l.status === 'Nuevo') : baseFiltered;
 
   const enProceso = filtered.filter(l => !isClosedStatus(l.status));
   const cerrados = filtered.filter(l => isClosedStatus(l.status));
@@ -548,23 +520,6 @@ export function LeadsPizarra({
           ))}
         </select>
       </div>
-
-      {selectedMonth === 'todos' ? (
-        <Card style={{ padding: '16px 20px' }}>
-          <div style={{ fontSize: 13, color: '#8B877F' }}>Selecciona un mes específico para definir y ver metas por RP.</div>
-        </Card>
-      ) : (
-        <Card gap={14}>
-          <Eyebrow>Metas de altas · {formatMonthLabel(selectedMonth)}</Eyebrow>
-          <MetaRow label="General" meta={generalMeta} real={totalVenta} onSaveMeta={v => setGoal(selectedMonth, GENERAL_RP, v)} />
-          {repMetaRows.map(r => (
-            <MetaRow key={r.rp} label={r.rp} meta={r.meta} real={r.real} onSaveMeta={v => setGoal(selectedMonth, r.rp, v)} />
-          ))}
-          {repMetaRows.length === 0 && (
-            <div style={{ fontSize: 12, color: '#ACA79E' }}>Aún no hay leads con RP asignado este mes.</div>
-          )}
-        </Card>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
         <Card>
@@ -652,9 +607,18 @@ export function LeadsPizarra({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <button style={pillBtnStyle(tab === 'proceso')} onClick={() => setTab('proceso')}>En proceso ({enProceso.length})</button>
         <button style={pillBtnStyle(tab === 'cerrados')} onClick={() => setTab('cerrados')}>Cerrados ({cerrados.length})</button>
+        <button style={pillBtnStyle(pendientesOnly)} onClick={() => setPendientesOnly(v => !v)}>Pendientes ({pendientesCount})</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64' }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#EAF1FB', border: '1px solid #C7D9F0', flex: 'none' }} />
+          Pendiente de contactar (Nuevo)
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64' }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#FDF3DF', border: '1px solid #F3E1B8', flex: 'none' }} />
+          Falta encuesta
+        </div>
       </div>
 
       {list.length === 0 ? (
@@ -662,12 +626,15 @@ export function LeadsPizarra({
       ) : (
         <div style={{ background: '#fff', border: '1px solid #E4E1DC', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            <table className="data-table" style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+            <table className="data-table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+              <colgroup>
+                {COLUMNS.map(c => <col key={c.label} style={{ width: c.width }} />)}
+              </colgroup>
               <thead>
                 <tr style={{ background: '#FAFAF9' }}>
-                  {HEADERS.map(h => (
-                    <th key={h} style={{ ...cellStyle, textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.03em', color: '#948F86', fontWeight: 500, borderBottom: '2px solid #191A23' }}>
-                      {h}
+                  {COLUMNS.map(c => (
+                    <th key={c.label} style={{ ...thStyleBase, textAlign: 'left' }}>
+                      {c.label}
                     </th>
                   ))}
                 </tr>
