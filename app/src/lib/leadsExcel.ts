@@ -1,9 +1,10 @@
 import * as XLSX from 'xlsx';
 import type { LeadInsert } from './types';
 
-/** Column headers for the bulk-upload template — intake data only (see LEADS_PIZARRA plan:
- * status/tour/montos/cierre get filled in later directly in the Pizarra, not at bulk-upload time). */
-const TEMPLATE_HEADERS = ['Nombre', 'Teléfono', 'Correo Electrónico', 'Estrategia', 'Promoción', 'RP', 'Fecha de asignación (AAAA-MM-DD)'];
+/** Column headers for the bulk-upload template — same fields captured by the "+ Nuevo lead"
+ * form, so both entry points fill the exact same data. Everything else (correo, plan,
+ * montos, cierre…) gets filled in later directly in the Pizarra, not at bulk-upload time. */
+const TEMPLATE_HEADERS = ['Fecha de asignación (AAAA-MM-DD)', 'Estrategia', 'Promoción', 'Nombre', 'RP', 'Teléfono'];
 
 export function downloadLeadsTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS]);
@@ -51,7 +52,6 @@ export async function parseLeadsWorkbook(file: File): Promise<ParsedLeadsWorkboo
     leads.push({
       nombre,
       telefono: text(row['Teléfono']) || undefined,
-      correo: text(row['Correo Electrónico']) || undefined,
       estrategia: text(row['Estrategia']) || undefined,
       promocion: text(row['Promoción']) || undefined,
       rp: text(row['RP']) || undefined,

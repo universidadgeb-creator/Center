@@ -8,7 +8,6 @@ import { CapturaSportlab } from './screens/CapturaSportlab';
 import { LeadsPizarra } from './screens/LeadsPizarra';
 import { useMembers } from './hooks/useMembers';
 import { useLeads } from './hooks/useLeads';
-import { useLeadGoals } from './hooks/useLeadGoals';
 import { useRps } from './hooks/useRps';
 import { usePromotions } from './hooks/usePromotions';
 import { useToast } from './hooks/useToast';
@@ -33,12 +32,11 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const { members, loading, error, updateMember } = useMembers();
   const { leads, loading: leadsLoading, error: leadsError, addLead, addLeads, updateLead, deleteLead, deleteLeads } = useLeads();
-  const { goals, error: goalsError, setGoal } = useLeadGoals();
   const { rps, addRp } = useRps();
   const { promotions, addPromotion } = usePromotions();
   const { toasts, push, dismiss } = useToast();
 
-  useErrorToasts(push, error, leadsError, goalsError);
+  useErrorToasts(push, error, leadsError);
 
   return (
     <div style={{ minHeight: '100vh', background: '#FAFAF9' }}>
@@ -73,8 +71,6 @@ function App() {
             addRp={addRp}
             promotions={promotions}
             addPromotion={addPromotion}
-            goals={goals}
-            setGoal={setGoal}
           />
         )
       )}

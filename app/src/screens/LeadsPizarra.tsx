@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
-import type { Lead, LeadGoal, LeadInsert, LeadPatch, Member, Promotion, Rp } from '../lib/types';
-import { captureInputStyle, checkButtonStyle, checkStyle, coloredPillBtnStyle, formatDate, initialsOf, pctColor, pctLabel, pillBtnStyle, primaryButtonStyle } from '../lib/style';
+import type { Lead, LeadInsert, LeadPatch, Member, Promotion, Rp } from '../lib/types';
+import { captureInputStyle, checkButtonStyle, checkStyle, coloredPillBtnStyle, formatDate, pctColor, pillBtnStyle, primaryButtonStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
 import {
   LEAD_CATEGORY_FILTERS, LEAD_ESTRATEGIAS, LEAD_STATUSES, PLAN_OPTIONS, STATUS_GROUPS,
@@ -23,93 +23,107 @@ const thStyleBase: React.CSSProperties = { padding: '8px 6px', fontSize: 10, tex
 const inputCellStyle: React.CSSProperties = { ...captureInputStyle(), padding: '6px 8px', fontSize: 12, minWidth: 0, width: '100%', flex: 'none' };
 const dividerStyle: React.CSSProperties = { borderLeft: '2px solid #D9D5CE' };
 const today = () => new Date().toISOString().slice(0, 10);
-const currency = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
-const GENERAL_RP = '';
 
 function promotionColor(promotions: Promotion[], label: string | null): string | undefined {
   return promotions.find(p => p.label === label)?.color;
 }
 
-function MetaRow({ label, meta, real, onSaveMeta }: { label: string; meta: number; real: number; onSaveMeta: (value: number) => void }) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 12, alignItems: 'center' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#2B2926' }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 11, color: '#8B877F' }}>Meta</span>
-        <input
-          type="number"
-          min={0}
-          defaultValue={meta}
-          onBlur={e => {
-            const v = Number(e.target.value) || 0;
-            if (v !== meta) onSaveMeta(v);
-          }}
-          style={{ width: 70, border: '1px solid #E4E1DC', borderRadius: 6, padding: '5px 8px', fontSize: 13, fontFamily: 'inherit', color: '#2B2926' }}
-        />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 110, justifyContent: 'flex-end' }}>
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#18181B' }}>{real}</span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: pctColor(real, meta) }}>{pctLabel(real, meta)}</span>
-      </div>
-    </div>
-  );
-}
-
-function NewLeadForm({ onAdd, onClose, rps, addRp }: { onAdd: (lead: LeadInsert) => void; onClose: () => void; rps: Rp[]; addRp: (name: string) => void }) {
-  const [nombre, setNombre] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [correo, setCorreo] = useState('');
-  const [estrategia, setEstrategia] = useState('');
-  const [rp, setRp] = useState('');
+/** Fields captured at creation time — matches carga masiva 1:1 (Fecha de asignación,
+ * Estrategia, Promoción, Nombre, RP, Teléfono). Everything else (correo, plan, montos…) is
+ * added later from the lead's detail drawer once it's in the pipeline. */
+function NewLeadForm({
+  onAdd,
+  onClose,
+  rps,
+  addRp,
+  promotions,
+  addPromotion,
+}: {
+  onAdd: (lead: LeadInsert) => void;
+  onClose: () => void;
+  rps: Rp[];
+  addRp: (name: string) => void;
+  promotions: Promotion[];
+  addPromotion: (label: string, color: string) => void;
+}) {
   const [fechaAsignacion, setFechaAsignacion] = useState(today);
+  const [estrategia, setEstrategia] = useState('');
+  const [promocion, setPromocion] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [rp, setRp] = useState('');
+  const [telefono, setTelefono] = useState('');
 
   const submit = () => {
     if (!nombre.trim()) return;
     onAdd({
-      nombre: nombre.trim(),
-      telefono: telefono.trim() || undefined,
-      correo: correo.trim() || undefined,
-      estrategia: estrategia || undefined,
-      rp: rp || undefined,
       fecha_asignacion: fechaAsignacion || undefined,
+      estrategia: estrategia || undefined,
+      promocion: promocion || undefined,
+      nombre: nombre.trim(),
+      rp: rp || undefined,
+      telefono: telefono.trim() || undefined,
     });
     onClose();
   };
 
+  const fullWidth = { ...captureInputStyle(), flex: 'none', width: '100%' } as const;
+
   return (
-    <Card gap={12}>
-      <div style={{ fontSize: 14, fontWeight: 600, color: '#18181B' }}>Nuevo lead</div>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input type="text" placeholder="Nombre*" value={nombre} onChange={e => setNombre(e.target.value)} style={captureInputStyle()} />
-        <input type="text" placeholder="Teléfono" value={telefono} onChange={e => setTelefono(e.target.value)} style={captureInputStyle()} />
-        <input type="text" placeholder="Correo electrónico" value={correo} onChange={e => setCorreo(e.target.value)} style={captureInputStyle()} />
-        <select value={estrategia} onChange={e => setEstrategia(e.target.value)} style={captureInputStyle()}>
-          <option value="">Estrategia…</option>
-          {LEAD_ESTRATEGIAS.map(e => <option key={e} value={e}>{e}</option>)}
-        </select>
-        <select value={rp} onChange={e => setRp(e.target.value)} style={captureInputStyle()}>
-          <option value="">RP…</option>
-          {rps.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
-        </select>
-        <AddOption label="RP" placeholder="Nombre del RP" onAdd={addRp} />
-        <input type="date" value={fechaAsignacion} onChange={e => setFechaAsignacion(e.target.value)} style={captureInputStyle()} />
+    <div style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(24,24,27,0.32)' }} />
+      <div style={{ position: 'relative', width: 460, maxWidth: '92vw', maxHeight: '86vh', overflowY: 'auto' }}>
+        <Card gap={14}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#18181B' }}>Nuevo lead</div>
+            <button
+              onClick={onClose}
+              aria-label="Cerrar"
+              style={{ background: 'none', border: 'none', fontSize: 22, color: '#8B877F', cursor: 'pointer', lineHeight: 1, padding: 0 }}
+            >
+              ×
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <input type="date" value={fechaAsignacion} onChange={e => setFechaAsignacion(e.target.value)} style={fullWidth} />
+            <select value={estrategia} onChange={e => setEstrategia(e.target.value)} style={fullWidth}>
+              <option value="">Estrategia…</option>
+              {LEAD_ESTRATEGIAS.map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select value={promocion} onChange={e => setPromocion(e.target.value)} style={captureInputStyle()}>
+                <option value="">Sin promoción</option>
+                {promotions.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+              </select>
+              <AddOption label="Promoción" placeholder="Nombre de la promoción" colors={NEW_PROMOTION_COLOR_CHOICES} onAdd={(label, color) => addPromotion(label, color ?? NEW_PROMOTION_COLOR_CHOICES[0])} />
+            </div>
+            <input type="text" placeholder="Nombre*" value={nombre} onChange={e => setNombre(e.target.value)} style={fullWidth} />
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <select value={rp} onChange={e => setRp(e.target.value)} style={captureInputStyle()}>
+                <option value="">RP…</option>
+                {rps.map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+              </select>
+              <AddOption label="RP" placeholder="Nombre del RP" onAdd={addRp} />
+            </div>
+            <input type="text" placeholder="Teléfono" value={telefono} onChange={e => setTelefono(e.target.value)} style={fullWidth} />
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={submit}
+              disabled={!nombre.trim()}
+              style={primaryButtonStyle(!nombre.trim())}
+            >
+              Guardar lead
+            </button>
+            <button
+              onClick={onClose}
+              style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 20px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </Card>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button
-          onClick={submit}
-          disabled={!nombre.trim()}
-          style={primaryButtonStyle(!nombre.trim())}
-        >
-          Guardar lead
-        </button>
-        <button
-          onClick={onClose}
-          style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 20px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
-        >
-          Cancelar
-        </button>
-      </div>
-    </Card>
+    </div>
   );
 }
 
@@ -362,30 +376,6 @@ const COLUMNS: { label: string; width: number }[] = [
   { label: 'APP', width: 50 },
 ];
 
-/** Read-only variant of the table, used once a specific RP is selected — no edit controls,
- * no detail drawer, matching the "vista de solo lectura" tradeoff for that scope. */
-const RP_COLUMNS: { label: string; width: number; align: 'left' | 'center' }[] = [
-  { label: 'Fecha de asignación', width: 140, align: 'left' },
-  { label: 'Nombre', width: 200, align: 'left' },
-  { label: 'Status', width: 160, align: 'left' },
-  { label: 'Tour', width: 70, align: 'center' },
-];
-
-function RpReadOnlyRow({ lead }: { lead: Lead }) {
-  return (
-    <tr style={{ borderBottom: '1px solid #EEEBE5', background: lead.status === 'Nuevo' ? '#EAF1FB' : undefined }}>
-      <td style={{ padding: '14px 20px', color: '#4A4640' }}>{formatDate(lead.fecha_asignacion)}</td>
-      <td style={{ padding: '14px 20px', fontWeight: 600, color: '#2B2926' }}>{lead.nombre}</td>
-      <td style={{ padding: '14px 20px' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: leadStatusColor(lead.status) }}>{lead.status}</span>
-      </td>
-      <td style={{ padding: '14px 20px', textAlign: 'center' }}>
-        <span style={checkStyle(lead.tour)}>{lead.tour ? '✓' : '✕'}</span>
-      </td>
-    </tr>
-  );
-}
-
 export function LeadsPizarra({
   leads,
   members,
@@ -398,8 +388,6 @@ export function LeadsPizarra({
   addRp,
   promotions,
   addPromotion,
-  goals,
-  setGoal,
 }: {
   leads: Lead[];
   members: Member[];
@@ -412,14 +400,11 @@ export function LeadsPizarra({
   addRp: (name: string) => void;
   promotions: Promotion[];
   addPromotion: (label: string, color: string) => void;
-  goals: LeadGoal[];
-  setGoal: (month: string, rp: string, meta_altas: number) => void;
 }) {
   const memberById = useMemo(() => new Map(members.map(m => [m.id, m])), [members]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadSummary, setUploadSummary] = useState<string | null>(null);
   const [detailLeadId, setDetailLeadId] = useState<string | null>(null);
-  const [showGoals, setShowGoals] = useState(false);
 
   // ---- Indicadores (arriba de la tabla) ----
   const months = useMemo(() => {
@@ -433,22 +418,11 @@ export function LeadsPizarra({
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState<'todos' | string>(months.includes(currentMonth) ? currentMonth : 'todos');
-  const [selectedRp, setSelectedRp] = useState('todos');
-  const isGeneral = selectedRp === 'todos';
 
-  // Month-only scope, independent of the RP selector — feeds the metas panel, which always
-  // shows every RP's goal regardless of which one is currently selected.
-  const monthScoped = useMemo(() => {
+  const scoped = useMemo(() => {
     if (selectedMonth === 'todos') return leads;
     return leads.filter(l => monthKey(l.fecha_asignacion) === selectedMonth);
   }, [leads, selectedMonth]);
-
-  // Month + RP scope — feeds every indicator card, so switching the RP selector re-scopes the
-  // whole dashboard instead of just the table below.
-  const scoped = useMemo(() => {
-    if (isGeneral) return monthScoped;
-    return monthScoped.filter(l => l.rp === selectedRp);
-  }, [monthScoped, isGeneral, selectedRp]);
 
   const allReps = useMemo(
     () => Array.from(new Set(leads.map(l => l.rp).filter((r): r is string => !!r))).sort(),
@@ -500,10 +474,7 @@ export function LeadsPizarra({
     .filter(e => e.count > 0)
     .sort((a, b) => b.count - a.count);
 
-  // Once a specific RP is selected, `scoped` is already limited to that RP — collapse the
-  // breakdown to their single row instead of iterating every rep (who'd otherwise show 0).
-  const cierreReps = isGeneral ? allReps : [selectedRp];
-  const rpCierre = cierreReps.map(rp => {
+  const rpCierre = allReps.map(rp => {
     const rpLeads = scoped.filter(l => l.rp === rp);
     const positivos = rpLeads.filter(l => isPositiveClosed(l.status)).length;
     const negativos = rpLeads.filter(l => isNegativeClosed(l.status)).length;
@@ -511,29 +482,6 @@ export function LeadsPizarra({
     const pct = rpLeads.length ? Math.round((positivos / rpLeads.length) * 100) : 0;
     return { rp, total: rpLeads.length, positivos, negativos, pendientes, pct };
   });
-
-  // RP-only figures — meaningless aggregated across every rep, so only shown once one is
-  // selected (see montoVendido/ticketPromedio/diasCierre cards below).
-  const montoTotal = wonScoped.reduce((sum, l) => sum + (l.monto_con_iva ?? 0), 0);
-  const ticketPromedio = wonScoped.length ? montoTotal / wonScoped.length : 0;
-  const diasCierre = wonScoped
-    .filter(l => l.fecha_cierre)
-    .map(l => (new Date(l.fecha_cierre!).getTime() - new Date(l.fecha_asignacion!).getTime()) / 86400000)
-    .filter(d => Number.isFinite(d) && d >= 0);
-  const promedioDiasCierre = diasCierre.length ? diasCierre.reduce((a, b) => a + b, 0) / diasCierre.length : null;
-
-  const goalsByRp = useMemo(() => {
-    const map = new Map<string, number>();
-    goals.filter(g => g.month === selectedMonth).forEach(g => map.set(g.rp, g.meta_altas));
-    return map;
-  }, [goals, selectedMonth]);
-  const repMetaRows = allReps.map(rp => ({
-    rp,
-    meta: goalsByRp.get(rp) ?? 0,
-    real: monthScoped.filter(l => l.rp === rp && isWonStatus(l.status)).length,
-  }));
-  const generalMeta = goalsByRp.get(GENERAL_RP) ?? 0;
-  const generalReal = monthScoped.filter(l => isWonStatus(l.status)).length;
 
   const handleFile = async (file: File) => {
     setUploadSummary('Importando…');
@@ -554,6 +502,7 @@ export function LeadsPizarra({
   };
 
   const [search, setSearch] = useState('');
+  const [rpFilter, setRpFilter] = useState('todos');
   const [categoryFilter, setCategoryFilter] = useState<typeof LEAD_CATEGORY_FILTERS[number]['key']>('todos');
   const [showForm, setShowForm] = useState(false);
   const [encuestaOnly, setEncuestaOnly] = useState(false);
@@ -561,11 +510,11 @@ export function LeadsPizarra({
 
   const baseFiltered = useMemo(() => {
     let rows = leads;
-    if (!isGeneral) rows = rows.filter(l => l.rp === selectedRp);
+    if (rpFilter !== 'todos') rows = rows.filter(l => l.rp === rpFilter);
     const q = search.trim().toLowerCase();
     if (q) rows = rows.filter(l => l.nombre.toLowerCase().includes(q));
     return rows;
-  }, [leads, isGeneral, selectedRp, search]);
+  }, [leads, rpFilter, search]);
 
   const filtered = useMemo(() => baseFiltered
     .filter(l => matchesLeadCategory(l.status, categoryFilter))
@@ -581,101 +530,60 @@ export function LeadsPizarra({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>Concentrado · Leads</div>
-          <div style={{ fontSize: 13, color: '#8B877F', marginTop: 4 }}>
-            {isGeneral ? 'Tablero de seguimiento editable — clic en el nombre para ver el detalle completo.' : `Vista de solo lectura para ${selectedRp}.`}
-          </div>
+          <div style={{ fontSize: 13, color: '#8B877F', marginTop: 4 }}>Tablero de seguimiento editable — clic en el nombre para ver el detalle completo.</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setShowGoals(s => !s)}
-            style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 16px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
-          >
-            {showGoals ? 'Cerrar metas' : 'Definir metas'}
-          </button>
-          {isGeneral && (
-            <>
-              <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowUploadMenu(v => !v)}
+              style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 16px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
+            >
+              Carga masiva ▾
+            </button>
+            {showUploadMenu && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, background: '#fff', border: '1px solid #E4E1DC', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)', zIndex: 10, minWidth: 180, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 <button
-                  onClick={() => setShowUploadMenu(v => !v)}
-                  style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 16px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
+                  onClick={() => { downloadLeadsTemplate(); setShowUploadMenu(false); }}
+                  style={{ background: 'none', border: 'none', textAlign: 'left', padding: '10px 14px', fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
                 >
-                  Carga masiva ▾
+                  Descargar plantilla
                 </button>
-                {showUploadMenu && (
-                  <div style={{ position: 'absolute', top: '110%', left: 0, background: '#fff', border: '1px solid #E4E1DC', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)', zIndex: 10, minWidth: 180, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    <button
-                      onClick={() => { downloadLeadsTemplate(); setShowUploadMenu(false); }}
-                      style={{ background: 'none', border: 'none', textAlign: 'left', padding: '10px 14px', fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
-                    >
-                      Descargar plantilla
-                    </button>
-                    <button
-                      onClick={() => { fileInputRef.current?.click(); setShowUploadMenu(false); }}
-                      style={{ background: 'none', border: 'none', textAlign: 'left', padding: '10px 14px', fontSize: 13, color: '#2B2926', cursor: 'pointer', borderTop: '1px solid #EEEBE5' }}
-                    >
-                      Subir archivo
-                    </button>
-                  </div>
-                )}
+                <button
+                  onClick={() => { fileInputRef.current?.click(); setShowUploadMenu(false); }}
+                  style={{ background: 'none', border: 'none', textAlign: 'left', padding: '10px 14px', fontSize: 13, color: '#2B2926', cursor: 'pointer', borderTop: '1px solid #EEEBE5' }}
+                >
+                  Subir archivo
+                </button>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                style={{ display: 'none' }}
-                onChange={e => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFile(file);
-                  e.target.value = '';
-                }}
-              />
-              <button
-                onClick={() => setShowForm(s => !s)}
-                style={primaryButtonStyle()}
-              >
-                {showForm ? 'Cerrar' : '+ Nuevo lead'}
-              </button>
-              <button
-                onClick={handleDeleteAll}
-                style={{ background: 'none', border: '1px solid #F4CCCA', color: '#B42318', padding: '10px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}
-              >
-                Borrar todos
-              </button>
-            </>
-          )}
+            )}
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
+              e.target.value = '';
+            }}
+          />
+          <button
+            onClick={() => setShowForm(s => !s)}
+            style={primaryButtonStyle()}
+          >
+            {showForm ? 'Cerrar' : '+ Nuevo lead'}
+          </button>
+          <button
+            onClick={handleDeleteAll}
+            style={{ background: 'none', border: '1px solid #F4CCCA', color: '#B42318', padding: '10px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}
+          >
+            Borrar todos
+          </button>
         </div>
       </div>
 
-      {showGoals && (
-        selectedMonth === 'todos' ? (
-          <Card style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: 13, color: '#8B877F' }}>Selecciona un mes específico para definir metas por RP.</div>
-          </Card>
-        ) : (
-          <Card gap={14}>
-            <Eyebrow>Metas de altas · {formatMonthLabel(selectedMonth)}</Eyebrow>
-            <MetaRow label="General" meta={generalMeta} real={generalReal} onSaveMeta={v => setGoal(selectedMonth, GENERAL_RP, v)} />
-            {repMetaRows.map(r => (
-              <MetaRow key={r.rp} label={r.rp} meta={r.meta} real={r.real} onSaveMeta={v => setGoal(selectedMonth, r.rp, v)} />
-            ))}
-            {repMetaRows.length === 0 && (
-              <div style={{ fontSize: 12, color: '#ACA79E' }}>Aún no hay leads con RP asignado este mes.</div>
-            )}
-          </Card>
-        )
-      )}
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-        <select
-          value={selectedRp}
-          onChange={e => setSelectedRp(e.target.value)}
-          style={{ border: '1px solid #E4E1DC', borderRadius: 8, padding: '9px 12px', fontSize: 13, fontFamily: 'inherit', color: '#2B2926', background: '#fff' }}
-        >
-          <option value="todos">General (todos los RP)</option>
-          {allReps.map(rp => (
-            <option key={rp} value={rp}>{rp}</option>
-          ))}
-        </select>
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <select
           value={selectedMonth}
           onChange={e => setSelectedMonth(e.target.value)}
@@ -687,18 +595,6 @@ export function LeadsPizarra({
           ))}
         </select>
       </div>
-
-      {!isGeneral && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 999, background: '#B9FF66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#191A23', flex: 'none' }}>
-            {initialsOf(selectedRp)}
-          </div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#18181B' }}>{selectedRp}</div>
-            <div style={{ fontSize: 13, color: '#8B877F' }}>{totalLeads} leads asignados{selectedMonth !== 'todos' ? ` · ${formatMonthLabel(selectedMonth)}` : ''}</div>
-          </div>
-        </div>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
         <Card gap={12} style={{ gridColumn: 'span 2' }}>
@@ -718,23 +614,6 @@ export function LeadsPizarra({
         <KpiBarCard label="Con encuesta" count={totalEncuesta} total={wonScoped.length} accent={WON_ONLY_ACCENT} title="Leads con venta cerrada que ya contestaron la encuesta y quedaron vinculados a un socio. Solo aplica a leads con 100% Venta." />
       </div>
 
-      {!isGeneral && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-          <Card>
-            <Eyebrow>Monto vendido</Eyebrow>
-            <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>{currency.format(montoTotal)}</div>
-          </Card>
-          <Card>
-            <Eyebrow>Ticket promedio</Eyebrow>
-            <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>{wonScoped.length ? currency.format(ticketPromedio) : '—'}</div>
-          </Card>
-          <Card>
-            <Eyebrow>Días promedio a cierre</Eyebrow>
-            <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>{promedioDiasCierre !== null ? Math.round(promedioDiasCierre) : '—'}</div>
-          </Card>
-        </div>
-      )}
-
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
         <Card gap={12}>
           <Eyebrow>Resumen de status (agrupado)</Eyebrow>
@@ -744,7 +623,7 @@ export function LeadsPizarra({
             <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>
           )}
           <div style={{ borderTop: '1px solid #EEEBE5', paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Eyebrow>{isGeneral ? '% de cierre por RP' : '% de cierre'}</Eyebrow>
+            <Eyebrow>% de cierre por RP</Eyebrow>
             {rpCierre.map(r => (
               <div key={r.rp} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
@@ -781,7 +660,16 @@ export function LeadsPizarra({
         </Card>
       )}
 
-      {isGeneral && showForm && <NewLeadForm onAdd={addLead} onClose={() => setShowForm(false)} rps={rps} addRp={addRp} />}
+      {showForm && (
+        <NewLeadForm
+          onAdd={addLead}
+          onClose={() => setShowForm(false)}
+          rps={rps}
+          addRp={addRp}
+          promotions={promotions}
+          addPromotion={addPromotion}
+        />
+      )}
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
@@ -791,6 +679,12 @@ export function LeadsPizarra({
           onChange={e => setSearch(e.target.value)}
           style={{ flex: 1, minWidth: 220, border: '1px solid #E4E1DC', borderRadius: 8, padding: '10px 14px', fontSize: 14, fontFamily: 'inherit', color: '#2B2926' }}
         />
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button style={pillBtnStyle(rpFilter === 'todos')} onClick={() => setRpFilter('todos')}>Todos</button>
+          {rps.map(r => (
+            <button key={r.id} style={pillBtnStyle(rpFilter === r.name)} onClick={() => setRpFilter(r.name)}>{r.name}</button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -811,51 +705,31 @@ export function LeadsPizarra({
       ) : (
         <div style={{ background: '#fff', border: '1px solid #E4E1DC', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
-            {isGeneral ? (
-              <table className="data-table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-                <colgroup>
-                  {COLUMNS.map(c => <col key={c.label} style={{ width: c.width }} />)}
-                </colgroup>
-                <thead>
-                  <tr style={{ background: '#FAFAF9' }}>
-                    {COLUMNS.map(c => (
-                      <th key={c.label} style={{ ...thStyleBase, ...(c.label === 'Expediente' ? dividerStyle : undefined), textAlign: 'left' }}>
-                        {c.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(lead => (
-                    <PizarraRow
-                      key={lead.id}
-                      lead={lead}
-                      member={lead.member_id ? memberById.get(lead.member_id) : undefined}
-                      onOpenDetail={() => setDetailLeadId(lead.id)}
-                      updateLead={updateLead}
-                    />
+            <table className="data-table" style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+              <colgroup>
+                {COLUMNS.map(c => <col key={c.label} style={{ width: c.width }} />)}
+              </colgroup>
+              <thead>
+                <tr style={{ background: '#FAFAF9' }}>
+                  {COLUMNS.map(c => (
+                    <th key={c.label} style={{ ...thStyleBase, ...(c.label === 'Expediente' ? dividerStyle : undefined), textAlign: 'left' }}>
+                      {c.label}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            ) : (
-              <table className="data-table" style={{ width: '100%', fontSize: 13, tableLayout: 'fixed' }}>
-                <colgroup>
-                  {RP_COLUMNS.map(c => <col key={c.label} style={{ width: c.width }} />)}
-                </colgroup>
-                <thead>
-                  <tr style={{ background: '#FAFAF9' }}>
-                    {RP_COLUMNS.map(c => (
-                      <th key={c.label} style={{ textAlign: c.align, padding: '12px 20px', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.03em', color: '#948F86', fontWeight: 500, borderBottom: '2px solid #191A23' }}>
-                        {c.label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(lead => <RpReadOnlyRow key={lead.id} lead={lead} />)}
-                </tbody>
-              </table>
-            )}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(lead => (
+                  <PizarraRow
+                    key={lead.id}
+                    lead={lead}
+                    member={lead.member_id ? memberById.get(lead.member_id) : undefined}
+                    onOpenDetail={() => setDetailLeadId(lead.id)}
+                    updateLead={updateLead}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
           <div style={{ padding: '14px 20px', borderTop: '1px solid #E4E1DC', fontSize: 13, color: '#8B877F' }}>
             <span>Mostrando {filtered.length} de {baseFiltered.length} leads</span>
@@ -863,7 +737,7 @@ export function LeadsPizarra({
         </div>
       )}
 
-      {isGeneral && detailLead && (
+      {detailLead && (
         <LeadDetailDrawer
           lead={detailLead}
           member={detailLead.member_id ? memberById.get(detailLead.member_id) : undefined}
