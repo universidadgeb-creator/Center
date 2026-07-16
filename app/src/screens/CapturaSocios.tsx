@@ -75,6 +75,16 @@ export function CapturaSocios({
   const totalEncuestas = members.length;
   const leadsVinculados = useMemo(() => wonLeads.filter(l => !!l.member_id).length, [wonLeads]);
 
+  /** Once a lead links to a member, it drops out of unlinkedWonLeads — so the row's <select>
+   * loses that <option> and the browser falls back to the placeholder, on refresh (React
+   * reconciles the option list right away). That reads as "it didn't save" even though it did.
+   * This map lets the row show a persistent "✓ Vinculado" instead of a select that resets itself. */
+  const linkedLeadByMember = useMemo(() => {
+    const map = new Map<string, Lead>();
+    for (const l of leads) if (l.member_id) map.set(l.member_id, l);
+    return map;
+  }, [leads]);
+
   /** Unlinked won leads indexed by phone, so each socio row can surface its likely lead. A key
    * can hold several leads (duplicate captures of the same prospect), so this stays a list —
    * the suggestion is shown for confirmation, never auto-applied. */
@@ -135,7 +145,7 @@ export function CapturaSocios({
         {ejecutivos.map(e => <option key={e} value={e} />)}
       </datalist>
 
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 32px 0' }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '32px 32px 0' }}>
         <Eyebrow>Indicadores rápidos</Eyebrow>
         {/* Two explicit rows instead of one auto-fit grid: the leads card is twice as wide as a
             "falta" card, so letting all four flow together orphaned a card on its own row. */}
@@ -166,6 +176,9 @@ export function CapturaSocios({
         </div>
       </div>
 
+      {/* auto-fit + minmax instead of a fixed 1fr/1fr: below ~840px (2×420) it drops to one
+          column automatically, so the two tables don't get crushed on a narrow screen. */}
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 32px 32px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: 24, alignItems: 'start' }}>
       <RoleQueue
         title="Captura de socio y RP"
         subtitle="Verifica el RP de venta y asigna ejecutivo y número de socio a cada nuevo registro del formulario."
@@ -177,14 +190,19 @@ export function CapturaSocios({
         ]}
         collapsible
         renderRow={m => {
+          const linkedLead = linkedLeadByMember.get(m.id);
           const key = phoneKey(m.phone);
-          const suggested = key ? leadsByPhone.get(key) ?? [] : [];
+          const suggested = !linkedLead && key ? leadsByPhone.get(key) ?? [] : [];
           return (
           <div key={m.id} style={captureRowStyle()}>
             <div style={{ flex: '2 1 200px', minWidth: 180 }}>
               <div style={{ fontWeight: 600, color: '#2B2926' }}>{m.name}</div>
               <div style={{ fontSize: 12, color: '#8B877F' }}>Alta: {formatDate(m.alta_date)}</div>
-              {suggested.length > 0 && (
+              {linkedLead ? (
+                <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
+                  ✓ Vinculado con lead: {linkedLead.nombre}
+                </div>
+              ) : suggested.length > 0 && (
                 <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
                   ★ Mismo teléfono: {suggested.map(s => s.nombre).join(' · ')}
                 </div>
@@ -213,38 +231,46 @@ export function CapturaSocios({
               onBlur={e => { if (e.target.value !== (m.ejecutivo ?? '')) updateMember(m.id, { ejecutivo: e.target.value || null }); }}
               style={captureInputStyle()}
             />
-            <select
-              defaultValue=""
-              onChange={e => { if (e.target.value) linkLead(m.id, e.target.value); }}
-              style={{ ...captureInputStyle(), ...(suggested.length > 0 ? { borderColor: SUGGEST_HUE } : undefined) }}
-            >
-              <option value="">Vincular con lead ganado…</option>
-              {suggested.length > 0 && (
-                <optgroup label="Mismo teléfono">
-                  {suggested.map(l => (
+            {linkedLead ? (
+              // Static on purpose — once linked, the lead drops out of the <select>'s own option
+              // list, so a select here would silently reset to the placeholder and look unsaved.
+              <div style={{ ...captureInputStyle(), display: 'flex', alignItems: 'center', background: '#EFFAF1', border: '1px solid #B7E4C7', color: SUGGEST_HUE, fontWeight: 600 }}>
+                ✓ Vinculado
+              </div>
+            ) : (
+              <select
+                defaultValue=""
+                onChange={e => { if (e.target.value) linkLead(m.id, e.target.value); }}
+                style={{ ...captureInputStyle(), ...(suggested.length > 0 ? { borderColor: SUGGEST_HUE } : undefined) }}
+              >
+                <option value="">Vincular con lead ganado…</option>
+                {suggested.length > 0 && (
+                  <optgroup label="Mismo teléfono">
+                    {suggested.map(l => (
+                      <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
+                    ))}
+                  </optgroup>
+                )}
+                <optgroup label="Todos los leads ganados">
+                  {unlinkedWonLeads.map(l => (
                     <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
                   ))}
                 </optgroup>
-              )}
-              <optgroup label="Todos los leads ganados">
-                {unlinkedWonLeads.map(l => (
-                  <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
-                ))}
-              </optgroup>
-            </select>
+              </select>
+            )}
           </div>
           );
         }}
       />
 
-      {/* Read-only on purpose: vincular siempre se hace desde la fila del socio (arriba), donde
+      {/* Read-only on purpose: vincular siempre se hace desde la fila del socio (izquierda), donde
           está la sugerencia por teléfono. Esta tabla solo expone quién falta. */}
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 32px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 600, color: '#18181B' }}>Leads cerrados sin encuesta</div>
+            <div style={{ fontSize: 22, fontWeight: 600, color: '#18181B' }}>Leads cerrados sin encuesta</div>
             <div style={{ fontSize: 13, color: '#8B877F', marginTop: 4 }}>
-              Ventas cerradas que aún no están vinculadas a un socio del Concentrado. O no contestaron la encuesta, o su socio ya existe y falta vincularlo desde la captura de arriba.
+              Ventas cerradas que aún no están vinculadas a un socio del Concentrado. O no contestaron la encuesta, o su socio ya existe y falta vincularlo desde la captura de la izquierda.
             </div>
           </div>
           <button style={collapseBtnStyle()} onClick={() => setShowSinEncuesta(v => !v)}>
@@ -253,31 +279,34 @@ export function CapturaSocios({
         </div>
 
         {showSinEncuesta && (
-          unlinkedWonLeads.length === 0 ? (
-            <EmptyState>Todos los leads cerrados están vinculados a su encuesta.</EmptyState>
-          ) : (
-            unlinkedWonLeads.map(l => {
-              const key = phoneKey(l.telefono);
-              const suggested = key ? membersByPhone.get(key) ?? [] : [];
-              return (
-                <div key={l.id} style={captureRowStyle()}>
-                  <div style={{ flex: '2 1 200px', minWidth: 180 }}>
-                    <div style={{ fontWeight: 600, color: '#2B2926' }}>{l.nombre}</div>
-                    <div style={{ fontSize: 12, color: '#8B877F' }}>
-                      {l.rp || 'Sin RP'} · Cierre: {formatDate(l.fecha_cierre)}
-                    </div>
-                    {suggested.length > 0 && (
-                      <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
-                        ★ Posible socio (mismo teléfono): {suggested.map(s => s.name).join(' · ')} — vincula desde su fila arriba
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {unlinkedWonLeads.length === 0 ? (
+              <EmptyState>Todos los leads cerrados están vinculados a su encuesta.</EmptyState>
+            ) : (
+              unlinkedWonLeads.map(l => {
+                const key = phoneKey(l.telefono);
+                const suggested = key ? membersByPhone.get(key) ?? [] : [];
+                return (
+                  <div key={l.id} style={captureRowStyle()}>
+                    <div style={{ flex: '2 1 200px', minWidth: 180 }}>
+                      <div style={{ fontWeight: 600, color: '#2B2926' }}>{l.nombre}</div>
+                      <div style={{ fontSize: 12, color: '#8B877F' }}>
+                        {l.rp || 'Sin RP'} · Cierre: {formatDate(l.fecha_cierre)}
                       </div>
-                    )}
+                      {suggested.length > 0 && (
+                        <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
+                          ★ Posible socio (mismo teléfono): {suggested.map(s => s.name).join(' · ')} — vincula desde su fila a la izquierda
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ flex: '1 1 140px', fontSize: 12, color: '#8B877F' }}>{l.telefono || 'Sin teléfono'}</div>
                   </div>
-                  <div style={{ flex: '1 1 140px', fontSize: 12, color: '#8B877F' }}>{l.telefono || 'Sin teléfono'}</div>
-                </div>
-              );
-            })
-          )
+                );
+              })
+            )}
+          </div>
         )}
+      </div>
       </div>
     </>
   );
