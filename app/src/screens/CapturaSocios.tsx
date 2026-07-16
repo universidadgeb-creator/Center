@@ -4,7 +4,7 @@ import { captureInputStyle, captureRowStyle, formatDate, pctColor } from '../lib
 import { isPositiveClosed } from '../lib/leadStatus';
 import { RoleQueue } from '../components/RoleQueue';
 import { Card, EmptyState, Eyebrow } from '../components/Card';
-import { KpiBarCard } from '../components/Chart';
+import { MagnitudeBar } from '../components/Chart';
 
 const MISSING_ACCENT = '#B42318';
 
@@ -94,26 +94,32 @@ export function CapturaSocios({
 
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 32px 0' }}>
         <Eyebrow>Indicadores rápidos</Eyebrow>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginTop: 10 }}>
-          <Card gap={4} title="Leads con venta cerrada (100% Venta) en el Concentrado de Leads.">
+        {/* Two explicit rows instead of one auto-fit grid: the leads card is twice as wide as a
+            "falta" card, so letting all four flow together orphaned a card on its own row. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 10 }}>
+          <Card gap={12}>
             <Eyebrow>Leads cerrados</Eyebrow>
-            <div style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{wonLeads.length}</div>
+            <div style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{wonLeads.length}</div>
+            <MagnitudeBar
+              label="Con encuesta"
+              count={totalEncuestas}
+              total={wonLeads.length}
+              hue="#1E7A42"
+              title="Socios registrados en el Concentrado de Socios — cada uno existe porque contestó la encuesta. Comparado contra los leads cerrados."
+            />
+            <MagnitudeBar
+              label="Leads vinculados"
+              count={leadsVinculados}
+              total={wonLeads.length}
+              hue="#1D4ED8"
+              title="Leads cerrados que ya quedaron vinculados con su socio/encuesta desde este portal."
+            />
           </Card>
-          <KpiBarCard
-            label="Con encuesta"
-            count={totalEncuestas}
-            total={wonLeads.length}
-            title="Socios registrados en el Concentrado de Socios — cada uno existe porque contestó la encuesta. Comparado contra los leads cerrados."
-          />
-          <KpiBarCard
-            label="Leads vinculados"
-            count={leadsVinculados}
-            total={wonLeads.length}
-            title="Leads cerrados que ya quedaron vinculados con su socio/encuesta desde este portal."
-          />
-          <MissingKpiCard label="Falta no. socio" missing={faltaNoSocio} total={members.length} />
-          <MissingKpiCard label="Falta RP" missing={faltaRp} total={members.length} />
-          <MissingKpiCard label="Falta ejecutivo" missing={faltaEjecutivo} total={members.length} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+            <MissingKpiCard label="Falta no. socio" missing={faltaNoSocio} total={members.length} />
+            <MissingKpiCard label="Falta RP" missing={faltaRp} total={members.length} />
+            <MissingKpiCard label="Falta ejecutivo" missing={faltaEjecutivo} total={members.length} />
+          </div>
         </div>
       </div>
 
