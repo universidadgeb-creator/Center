@@ -69,36 +69,9 @@ function HomeColumn({ label, title, subtitle, children }: { label: string; title
   );
 }
 
-/** Simple geometric burst — original shape, not a reproduction of any reference illustration. */
-function BurstShape() {
-  return (
-    <svg width="168" height="168" viewBox="0 0 168 168" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="84" cy="84" r="58" fill={color.accent} />
-      <path d="M148 40 L154 54 L168 60 L154 66 L148 80 L142 66 L128 60 L142 54 Z" fill={color.accentInk} />
-      <path d="M28 108 L32 118 L42 122 L32 126 L28 136 L24 126 L14 122 L24 118 Z" fill={color.accentInk} />
-      <circle cx="140" cy="130" r="7" fill={color.accentInk} />
-    </svg>
-  );
-}
-
 export function Home({ onNavigate }: { onNavigate: (s: Screen) => void }) {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '56px 32px 72px', display: 'flex', flexDirection: 'column', gap: 56 }}>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 420px', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <SectionLabel>Portal operativo</SectionLabel>
-          <h1 style={{ fontSize: 48, fontWeight: 800, color: color.accentInk, margin: 0, lineHeight: 1.05, letterSpacing: '-0.01em' }}>
-            Elige el panel que corresponde a tu rol
-          </h1>
-          <p style={{ fontSize: 15, color: '#57534E', maxWidth: 420, lineHeight: 1.6, margin: 0 }}>
-            Leads, socios y captura operativa de Vivo47, todo desde un mismo lugar.
-          </p>
-        </div>
-        <div style={{ flex: '0 0 auto', display: 'flex', justifyContent: 'center' }}>
-          <BurstShape />
-        </div>
-      </div>
 
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
         <HomeColumn label="Leads" title="Prospectos" subtitle="Antes de la venta.">

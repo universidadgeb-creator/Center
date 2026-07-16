@@ -124,6 +124,7 @@ function LeadDetailDrawer({
   addPromotion,
   onClose,
   updateLead,
+  deleteLead,
 }: {
   lead: Lead;
   member: Member | undefined;
@@ -133,6 +134,7 @@ function LeadDetailDrawer({
   addPromotion: (label: string, color: string) => void;
   onClose: () => void;
   updateLead: (id: string, patch: LeadPatch) => void;
+  deleteLead: (id: string) => void;
 }) {
   return (
     <Drawer open title={lead.nombre} subtitle={member?.member_no ? `Socio ${member.member_no}` : 'Aún no vinculado a un socio'} onClose={onClose}>
@@ -248,6 +250,20 @@ function LeadDetailDrawer({
           style={{ ...captureInputStyle(), minHeight: 80, resize: 'vertical', fontFamily: 'inherit' }}
         />
       </DrawerField>
+
+      <div style={{ borderTop: '1px solid #EEEBE5', paddingTop: 16, marginTop: 4 }}>
+        <button
+          onClick={() => {
+            if (window.confirm(`¿Borrar el lead "${lead.nombre}"? Esta acción no se puede deshacer.`)) {
+              deleteLead(lead.id);
+              onClose();
+            }
+          }}
+          style={{ background: 'none', border: '1px solid #F4CCCA', color: '#B42318', padding: '10px 16px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+        >
+          Borrar lead
+        </button>
+      </div>
     </Drawer>
   );
 }
@@ -343,6 +359,8 @@ export function LeadsPizarra({
   addLead,
   addLeads,
   updateLead,
+  deleteLead,
+  deleteLeads,
   rps,
   addRp,
   promotions,
@@ -355,6 +373,8 @@ export function LeadsPizarra({
   addLead: (lead: LeadInsert) => void;
   addLeads: (leads: LeadInsert[]) => Promise<number>;
   updateLead: (id: string, patch: LeadPatch) => void;
+  deleteLead: (id: string) => void;
+  deleteLeads: (ids: string[]) => Promise<boolean>;
   rps: Rp[];
   addRp: (name: string) => void;
   promotions: Promotion[];
@@ -440,6 +460,16 @@ export function LeadsPizarra({
     setUploadSummary(`Se importaron ${inserted} de ${total} filas${skippedNote}.`);
   };
 
+  const handleDeleteAll = async () => {
+    if (leads.length === 0) return;
+    const confirmed = window.confirm(
+      `¿Borrar los ${leads.length} leads del Concentrado? Esta acción no se puede deshacer.`
+    );
+    if (!confirmed) return;
+    const ok = await deleteLeads(leads.map(l => l.id));
+    setUploadSummary(ok ? `Se borraron ${leads.length} leads.` : 'No se pudieron borrar los leads.');
+  };
+
   const [search, setSearch] = useState('');
   const [rpFilter, setRpFilter] = useState('todos');
   const [tab, setTab] = useState<'proceso' | 'cerrados'>('proceso');
@@ -496,6 +526,12 @@ export function LeadsPizarra({
             style={primaryButtonStyle()}
           >
             {showForm ? 'Cerrar' : '+ Nuevo lead'}
+          </button>
+          <button
+            onClick={handleDeleteAll}
+            style={{ background: 'none', border: '1px solid #F4CCCA', color: '#B42318', padding: '10px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer' }}
+          >
+            Borrar todos
           </button>
         </div>
       </div>
@@ -665,6 +701,7 @@ export function LeadsPizarra({
           addPromotion={addPromotion}
           onClose={() => setDetailLeadId(null)}
           updateLead={updateLead}
+          deleteLead={deleteLead}
         />
       )}
 

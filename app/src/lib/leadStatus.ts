@@ -15,6 +15,7 @@ export const LEAD_STATUSES = [
   'Pase invitado Easy Fit',
   'Tiene total pass',
   'Lead de renovación',
+  'No venta / No interesa',
 ] as const;
 
 export type LeadStatus = typeof LEAD_STATUSES[number];
@@ -25,6 +26,7 @@ const CLOSED_STATUSES: ReadonlySet<string> = new Set([
   '0% No le interesa',
   'No existe',
   'Tiene total pass',
+  'No venta / No interesa',
 ]);
 
 export function isClosedStatus(status: string | null | undefined): boolean {
@@ -55,6 +57,7 @@ export const LEAD_STATUS_COLORS: Record<string, string> = {
   '0% No le interesa': '#B42318',
   'Nunca contestó': '#B42318',
   'No existe': '#B42318',
+  'No venta / No interesa': '#B42318',
   'Pase invitado Easy Fit': '#4D7C0F',
   'Lead de renovación': '#4D7C0F',
 };

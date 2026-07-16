@@ -298,7 +298,10 @@ create policy leads_insert_anon on leads for insert to anon with check (true);
 drop policy if exists leads_update_anon on leads;
 create policy leads_update_anon on leads for update to anon using (true) with check (true);
 
-grant select, insert, update on leads to anon;
+drop policy if exists leads_delete_anon on leads;
+create policy leads_delete_anon on leads for delete to anon using (true);
+
+grant select, insert, update, delete on leads to anon;
 
 drop policy if exists lead_goals_select_anon on lead_goals;
 create policy lead_goals_select_anon on lead_goals for select to anon using (true);

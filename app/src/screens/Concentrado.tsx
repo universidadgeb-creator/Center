@@ -78,7 +78,7 @@ function sortMembers(rows: Member[], key: SortKey, dir: SortDir): Member[] {
     else if (key === 'keepgoing') cmp = (b.keepgoing ? 1 : 0) - (a.keepgoing ? 1 : 0);
     else if (key === 'performanceDay') cmp = (b.performance_day ? 1 : 0) - (a.performance_day ? 1 : 0);
     else if (key === 'risk') cmp = (RISK_ORDER[riskLabel(a.abandono_score, a.risk)] ?? 3) - (RISK_ORDER[riskLabel(b.abandono_score, b.risk)] ?? 3);
-    else if (key === 'estado') cmp = (a.reviewed ? 1 : 0) - (b.reviewed ? 1 : 0);
+    else if (key === 'estado') cmp = (a.member_no ? 1 : 0) - (b.member_no ? 1 : 0);
     else if (key === 'altaDate') cmp = (a.alta_date || '').localeCompare(b.alta_date || '');
     if (cmp === 0) cmp = a.name.localeCompare(b.name);
     return dir === 'desc' ? -cmp : cmp;
@@ -132,7 +132,7 @@ export function Concentrado({
   const totalAll = scoped.length;
   const kpiG = (count: number) => ({ count, pctLabel: pctLabel(count, totalAll), color: pctColor(count, totalAll) });
   const riesgoAltoCount = scoped.filter(m => riskLabel(m.abandono_score, m.risk) === 'Alto').length;
-  const pendientesCount = scoped.filter(m => !m.reviewed).length;
+  const pendientesCount = scoped.filter(m => !m.member_no).length;
   const kpis = {
     app: kpiG(scoped.filter(m => m.app_downloaded).length),
     sportlab: kpiG(scoped.filter(m => m.sportlab).length),
@@ -361,11 +361,11 @@ export function Concentrado({
                     <span
                       style={{
                         fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 999, display: 'inline-block',
-                        background: m.reviewed ? '#E8F5EC' : '#FDF3DF',
-                        color: m.reviewed ? '#1E7A42' : '#92610A',
+                        background: m.member_no ? '#E8F5EC' : '#FDF3DF',
+                        color: m.member_no ? '#1E7A42' : '#92610A',
                       }}
                     >
-                      {m.reviewed ? 'Revisado' : 'Pendiente'}
+                      {m.member_no ? 'Revisado' : 'Pendiente'}
                     </span>
                   </td>
                   <td style={{ padding: '14px 20px', color: '#4A4640' }}>{formatDate(m.alta_date)}</td>

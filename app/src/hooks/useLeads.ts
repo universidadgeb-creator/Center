@@ -9,16 +9,26 @@ export function useLeads() {
 
   const refetch = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) {
-        setError(error.message);
-      } else {
-        setError(null);
-        setLeads(data as Lead[]);
+      // PostgREST caps a single response at 1000 rows, so page through with
+      // .range() until a page comes back short — otherwise leads past the
+      // 1000th (ordered by created_at) silently never show up in the portal.
+      const PAGE_SIZE = 1000;
+      const all: Lead[] = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const { data, error } = await supabase
+          .from('leads')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) {
+          setError(error.message);
+          return;
+        }
+        all.push(...(data as Lead[]));
+        if (!data || data.length < PAGE_SIZE) break;
       }
+      setError(null);
+      setLeads(all);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo conectar a la base de datos.');
     } finally {
@@ -87,5 +97,40 @@ export function useLeads() {
     }
   }, [refetch]);
 
-  return { leads, loading, error, addLead, addLeads, updateLead, refetch };
+  const deleteLead = useCallback(async (id: string) => {
+    const prev = leads;
+    setLeads(current => current.filter(l => l.id !== id));
+    try {
+      const { error } = await supabase.from('leads').delete().eq('id', id);
+      if (error) {
+        setError(error.message);
+        setLeads(prev);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo borrar el lead.');
+      setLeads(prev);
+    }
+  }, [leads]);
+
+  /** Bulk delete (used by "Borrar todos" in Pizarra) — one request instead of N. */
+  const deleteLeads = useCallback(async (ids: string[]): Promise<boolean> => {
+    if (ids.length === 0) return true;
+    const prev = leads;
+    setLeads(current => current.filter(l => !ids.includes(l.id)));
+    try {
+      const { error } = await supabase.from('leads').delete().in('id', ids);
+      if (error) {
+        setError(error.message);
+        setLeads(prev);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo borrar los leads.');
+      setLeads(prev);
+      return false;
+    }
+  }, [leads]);
+
+  return { leads, loading, error, addLead, addLeads, updateLead, deleteLead, deleteLeads, refetch };
 }

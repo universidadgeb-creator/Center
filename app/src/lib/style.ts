@@ -29,19 +29,24 @@ export function riskCategoryColors(risk: Risk | null | undefined): { bg: string;
   return RISK_NEUTRAL;
 }
 
-/** Prefers the numeric abandono_score (9-10 verde · 7-8 amarillo · ≤6 rojo); falls back to the risk category text. */
+/**
+ * Prefers the canonical `risk` category (staff-entered, see schema.sql) since that's the
+ * value used across all 3 screens; falls back to the numeric abandono_score only when no
+ * category has been set yet.
+ */
 export function riskColors(risk: Risk | null | undefined, score?: number | null): { bg: string; text: string } {
-  if (score === null || score === undefined) return riskCategoryColors(risk);
+  if (risk) return riskCategoryColors(risk);
   return riskScoreColors(score);
 }
 
 /**
- * Derives the displayed risk label from the same score thresholds riskScoreColors uses, so
- * the badge text and its color can never disagree. Falls back to the stored `risk` category
- * only when there's no score yet (e.g. evaluation not run).
+ * Derives the displayed risk label, preferring the canonical `risk` category (staff-entered)
+ * so the badge text always matches what's used across all 3 screens. Falls back to the
+ * score-based thresholds only when no category has been set yet.
  */
-export function riskLabel(score: number | null | undefined, fallback: Risk | null | undefined): string {
-  if (score === null || score === undefined) return fallback ?? 'Sin evaluar';
+export function riskLabel(score: number | null | undefined, risk: Risk | null | undefined): string {
+  if (risk) return risk;
+  if (score === null || score === undefined) return 'Sin evaluar';
   if (score >= 9) return 'Bajo';
   if (score >= 7) return 'Medio';
   return 'Alto';

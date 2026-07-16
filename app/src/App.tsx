@@ -36,7 +36,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const { members, loading, error, updateMember } = useMembers();
-  const { leads, loading: leadsLoading, error: leadsError, addLead, addLeads, updateLead } = useLeads();
+  const { leads, loading: leadsLoading, error: leadsError, addLead, addLeads, updateLead, deleteLead, deleteLeads } = useLeads();
   const { goals, error: goalsError, setGoal } = useLeadGoals();
   const { rps, addRp } = useRps();
   const { promotions, addPromotion } = usePromotions();
@@ -86,6 +86,8 @@ function App() {
             addLead={addLead}
             addLeads={addLeads}
             updateLead={updateLead}
+            deleteLead={deleteLead}
+            deleteLeads={deleteLeads}
             rps={rps}
             addRp={addRp}
             promotions={promotions}
