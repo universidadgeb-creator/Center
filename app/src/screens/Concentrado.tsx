@@ -215,8 +215,8 @@ export function Concentrado({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-        <Card gap={10}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1.4fr) repeat(3, minmax(150px, 1fr))', gridAutoRows: 'auto', gap: 16 }}>
+        <Card gap={10} style={{ gridColumn: '1', gridRow: '1 / span 2' }}>
           <Eyebrow>Total socios</Eyebrow>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#18181B' }}>{totalAll}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 2 }}>
@@ -228,8 +228,24 @@ export function Concentrado({
             )}
           </div>
         </Card>
-        {(['app', 'sportlab', 'keepgoing', 'performanceDay'] as const).map(k => (
-          <Card key={k}>
+
+        <Card style={{ gridColumn: '2', gridRow: '1', background: '#FBEAEA', border: '1px solid #F4CCCA' }}>
+          <Eyebrow color="#B42318">Riesgo alto</Eyebrow>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 24, fontWeight: 600, color: '#B42318' }}>{kpis.riesgoAlto.count}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#B42318' }}>{kpis.riesgoAlto.pctLabel} · de {totalAll}</span>
+          </div>
+        </Card>
+        <Card style={{ gridColumn: '2', gridRow: '2', background: '#FDF3DF', border: '1px solid #F3E1B8' }}>
+          <Eyebrow color="#92610A">Pendientes de revisión</Eyebrow>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontSize: 24, fontWeight: 600, color: '#92610A' }}>{kpis.pendientes.count}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#92610A' }}>{kpis.pendientes.pctLabel} · de {totalAll}</span>
+          </div>
+        </Card>
+
+        {(['app', 'sportlab', 'keepgoing', 'performanceDay'] as const).map((k, i) => (
+          <Card key={k} style={{ gridColumn: String(3 + (i % 2)), gridRow: String(1 + Math.floor(i / 2)) }}>
             <Eyebrow>{k === 'app' ? 'APP Descargada' : k === 'sportlab' ? 'SPORTLAB' : k === 'keepgoing' ? 'KEEP GOING' : 'Performance Day'}</Eyebrow>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{kpis[k].count}</span>
@@ -237,20 +253,6 @@ export function Concentrado({
             </div>
           </Card>
         ))}
-        <Card style={{ background: '#FBEAEA', border: '1px solid #F4CCCA' }}>
-          <Eyebrow color="#B42318">Riesgo alto</Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#B42318' }}>{kpis.riesgoAlto.count}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#B42318' }}>{kpis.riesgoAlto.pctLabel} · de {totalAll}</span>
-          </div>
-        </Card>
-        <Card style={{ background: '#FDF3DF', border: '1px solid #F3E1B8' }}>
-          <Eyebrow color="#92610A">Pendientes de revisión</Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#92610A' }}>{kpis.pendientes.count}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#92610A' }}>{kpis.pendientes.pctLabel} · de {totalAll}</span>
-          </div>
-        </Card>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
