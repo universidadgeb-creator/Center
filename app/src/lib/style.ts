@@ -10,49 +10,58 @@ export function initialsOf(name: string): string {
 
 const RISK_NEUTRAL = { bg: '#F1EFEA', text: '#928D85' };
 const RISK_GREEN = { bg: '#E8F5EC', text: '#1E7A42' };
-const RISK_YELLOW = { bg: '#FDF3DF', text: '#92610A' };
+const RISK_ORANGE = { bg: '#FDE9DA', text: '#C2410C' };
 const RISK_RED = { bg: '#FBEAEA', text: '#B42318' };
 
-/** Score-based palette used everywhere risk is shown: 9-10 verde, 7-8 amarillo, ≤6 rojo. */
+/**
+ * The Sheet's "Categoría Riesgo" column (Z / COL.risk in apps-script) turned out to actually
+ * hold a raw 1-10 "calificación" number, not the Alto/Medio/Bajo text the column name implies
+ * — same scale and thresholds as the sheet's own conditional formatting: 9-10 verde/Bajo,
+ * 7-8 naranja/Medio, ≤6 rojo/Alto. `risk` therefore arrives as a numeric string ("8", "6"…)
+ * in practice; this parses that case but still honors real "Alto"/"Medio"/"Bajo" text if the
+ * sheet mapping is ever corrected upstream.
+ */
+function parseRiskInput(risk: string | null | undefined, score: number | null | undefined): number | string | null {
+  if (risk === 'Alto' || risk === 'Medio' || risk === 'Bajo') return risk;
+  const n = risk ? Number(risk) : NaN;
+  if (Number.isFinite(n)) return n;
+  return score ?? null;
+}
+
+/** Score-based palette used everywhere risk is shown: 9-10 verde, 7-8 naranja, ≤6 rojo. */
 export function riskScoreColors(score: number | null | undefined): { bg: string; text: string } {
   if (score === null || score === undefined) return RISK_NEUTRAL;
   if (score >= 9) return RISK_GREEN;
-  if (score >= 7) return RISK_YELLOW;
+  if (score >= 7) return RISK_ORANGE;
   return RISK_RED;
 }
 
-/** Category-only palette, used as a fallback when no numeric score is available. */
+/** Category-only palette, used when the risk value is already Alto/Medio/Bajo text. */
 export function riskCategoryColors(risk: Risk | null | undefined): { bg: string; text: string } {
   if (risk === 'Alto') return RISK_RED;
-  if (risk === 'Medio') return RISK_YELLOW;
+  if (risk === 'Medio') return RISK_ORANGE;
   if (risk === 'Bajo') return RISK_GREEN;
   return RISK_NEUTRAL;
 }
 
-/**
- * Prefers the canonical `risk` category (staff-entered, see schema.sql) since that's the
- * value used across all 3 screens; falls back to the numeric abandono_score only when no
- * category has been set yet.
- */
-export function riskColors(risk: Risk | null | undefined, score?: number | null): { bg: string; text: string } {
-  if (risk) return riskCategoryColors(risk);
-  return riskScoreColors(score);
+export function riskColors(risk: string | null | undefined, score?: number | null): { bg: string; text: string } {
+  const parsed = parseRiskInput(risk, score);
+  if (parsed === null) return RISK_NEUTRAL;
+  if (typeof parsed === 'string') return riskCategoryColors(parsed as Risk);
+  return riskScoreColors(parsed);
 }
 
-/**
- * Derives the displayed risk label, preferring the canonical `risk` category (staff-entered)
- * so the badge text always matches what's used across all 3 screens. Falls back to the
- * score-based thresholds only when no category has been set yet.
- */
-export function riskLabel(score: number | null | undefined, risk: Risk | null | undefined): string {
-  if (risk) return risk;
-  if (score === null || score === undefined) return 'Sin evaluar';
-  if (score >= 9) return 'Bajo';
-  if (score >= 7) return 'Medio';
+/** Derives the displayed risk label from the parsed calificación (see parseRiskInput above). */
+export function riskLabel(score: number | null | undefined, risk: string | null | undefined): string {
+  const parsed = parseRiskInput(risk, score);
+  if (parsed === null) return 'Sin evaluar';
+  if (typeof parsed === 'string') return parsed;
+  if (parsed >= 9) return 'Bajo';
+  if (parsed >= 7) return 'Medio';
   return 'Alto';
 }
 
-export function riskBadgeStyle(risk: Risk | null | undefined, score?: number | null): CSSProperties {
+export function riskBadgeStyle(risk: string | null | undefined, score?: number | null): CSSProperties {
   const c = riskColors(risk, score);
   return {
     background: c.bg,

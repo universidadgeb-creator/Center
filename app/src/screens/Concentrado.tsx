@@ -50,7 +50,7 @@ const JKL_FIELDS: { field: 'mejorar' | 'abandono' | 'ayudaria'; column: string; 
   { field: 'ayudaria', column: 'L', label: 'Qué le ayudaría a mantenerse constante' },
 ];
 
-function topAnswers(list: Member[], field: 'mejorar' | 'abandono' | 'ayudaria', limit = 4) {
+function topAnswers(list: Member[], field: 'objetivo' | 'mejorar' | 'abandono' | 'ayudaria', limit = 4) {
   const counts = new Map<string, number>();
   list.forEach(m => {
     const v = (m[field] || '').trim();
@@ -84,6 +84,18 @@ function sortMembers(rows: Member[], key: SortKey, dir: SortDir): Member[] {
     return dir === 'desc' ? -cmp : cmp;
   });
   return sorted;
+}
+
+/** Compact colored-dot + label + "count · pct" row, used inside "Total socios" so the risk
+ * and pendientes breakdown reads at a glance without scanning across separate cards. */
+function MiniStatRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+      <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: 'none' }} />
+      <span style={{ color: '#6E6A64', flex: 1 }}>{label}</span>
+      <span style={{ fontWeight: 600, color: '#2B2926' }}>{count} · {pctLabel(count, total)}</span>
+    </div>
+  );
 }
 
 function IndicatorCard({ title, children }: { title: string; children: React.ReactNode }) {
@@ -131,8 +143,15 @@ export function Concentrado({
 
   const totalAll = scoped.length;
   const kpiG = (count: number) => ({ count, pctLabel: pctLabel(count, totalAll), color: pctColor(count, totalAll) });
-  const riesgoAltoCount = scoped.filter(m => riskLabel(m.abandono_score, m.risk) === 'Alto').length;
   const pendientesCount = scoped.filter(m => !m.member_no).length;
+
+  const riskDist = (['Alto', 'Medio', 'Bajo'] as const).map(r => {
+    const count = scoped.filter(m => riskLabel(m.abandono_score, m.risk) === r).length;
+    return { label: r, count, color: riskCategoryColors(r).text };
+  });
+  const riskSinEvaluar = scoped.filter(m => riskLabel(m.abandono_score, m.risk) === 'Sin evaluar').length;
+  const riesgoAltoCount = riskDist.find(r => r.label === 'Alto')?.count ?? 0;
+
   const kpis = {
     app: kpiG(scoped.filter(m => m.app_downloaded).length),
     sportlab: kpiG(scoped.filter(m => m.sportlab).length),
@@ -153,11 +172,13 @@ export function Concentrado({
   });
   const ageSinDato = scoped.filter(m => m.age === null).length;
 
-  const riskDist = (['Alto', 'Medio', 'Bajo'] as const).map(r => {
-    const count = scoped.filter(m => riskLabel(m.abandono_score, m.risk) === r).length;
-    return { label: r, count, color: riskCategoryColors(r).text };
-  });
-  const riskSinEvaluar = scoped.filter(m => m.abandono_score === null && !m.risk).length;
+  const { top: objetivoTop, total: objetivoTotal } = topAnswers(scoped, 'objetivo');
+  const objetivoTopSum = objetivoTop.reduce((sum, a) => sum + a.count, 0);
+  const objetivoOtros = objetivoTotal - objetivoTopSum;
+  const objetivoSlices = [
+    ...objetivoTop.map((a, i) => ({ label: a.label, count: a.count, color: JKL_COLORS[i] })),
+    ...(objetivoOtros > 0 ? [{ label: 'Otros', count: objetivoOtros, color: '#ACA79E' }] : []),
+  ];
 
   let filtered = scoped;
   if (search.trim()) {
@@ -207,16 +228,25 @@ export function Concentrado({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
-        <Card>
+        <Card gap={10}>
           <Eyebrow>Total socios</Eyebrow>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#18181B' }}>{totalAll}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 }}>
+            <MiniStatRow label="Pendientes de revisión" count={pendientesCount} total={totalAll} color="#92610A" />
+            {riskDist.map(r => (
+              <MiniStatRow key={r.label} label={`Riesgo ${r.label.toLowerCase()}`} count={r.count} total={totalAll} color={r.color} />
+            ))}
+            {riskSinEvaluar > 0 && (
+              <MiniStatRow label="Sin evaluar" count={riskSinEvaluar} total={totalAll} color="#928D85" />
+            )}
+          </div>
         </Card>
         {(['app', 'sportlab', 'keepgoing', 'performanceDay'] as const).map(k => (
           <Card key={k}>
             <Eyebrow>{k === 'app' ? 'APP Descargada' : k === 'sportlab' ? 'SPORTLAB' : k === 'keepgoing' ? 'KEEP GOING' : 'Performance Day'}</Eyebrow>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
               <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{kpis[k].count}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: kpis[k].color }}>{kpis[k].pctLabel}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: kpis[k].color }}>{kpis[k].pctLabel} · de {totalAll}</span>
             </div>
           </Card>
         ))}
@@ -224,14 +254,14 @@ export function Concentrado({
           <Eyebrow color="#B42318">Riesgo alto</Eyebrow>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 24, fontWeight: 600, color: '#B42318' }}>{kpis.riesgoAlto.count}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#B42318' }}>{kpis.riesgoAlto.pctLabel}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#B42318' }}>{kpis.riesgoAlto.pctLabel} · de {totalAll}</span>
           </div>
         </Card>
         <Card style={{ background: '#FDF3DF', border: '1px solid #F3E1B8' }}>
           <Eyebrow color="#92610A">Pendientes de revisión</Eyebrow>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span style={{ fontSize: 24, fontWeight: 600, color: '#92610A' }}>{kpis.pendientes.count}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#92610A' }}>{kpis.pendientes.pctLabel}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#92610A' }}>{kpis.pendientes.pctLabel} · de {totalAll}</span>
           </div>
         </Card>
       </div>
@@ -261,10 +291,11 @@ export function Concentrado({
             )}
           </IndicatorCard>
 
-          <IndicatorCard title="Distribución de riesgo">
-            <StackedBar segments={riskDist.map(r => ({ label: r.label, count: r.count, color: r.color }))} />
-            {riskSinEvaluar > 0 && (
-              <div style={{ fontSize: 11, color: '#ACA79E' }}>{riskSinEvaluar} sin evaluar</div>
+          <IndicatorCard title="Columna E · ¿Cuál de las siguientes opciones describe mejor tu principal objetivo?">
+            {objetivoTop.length === 0 ? (
+              <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin respuestas registradas.</div>
+            ) : (
+              <DonutChart slices={objetivoSlices} />
             )}
           </IndicatorCard>
 
