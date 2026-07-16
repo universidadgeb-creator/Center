@@ -163,6 +163,21 @@ export function pillBtnStyle(active: boolean): CSSProperties {
 /** Primary CTA button — the brand-accent block from the Positivus-style references
  * (neon green fill, near-black text) used for the main action on a screen ("Guardar",
  * "+ Nuevo lead", etc.). Not used for table/row-level actions, which stay neutral. */
+/** Pill filter tinted to a given semantic hue (e.g. blue "pendientes seguimiento", orange
+ * "pendientes encuesta") instead of the brand accent — for filters whose color carries meaning. */
+export function coloredPillBtnStyle(active: boolean, hue: string): CSSProperties {
+  return {
+    padding: '8px 16px',
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: 500,
+    border: active ? `1px solid ${hue}` : '1px solid #E4E1DC',
+    cursor: 'pointer',
+    background: active ? `${hue}1A` : '#FFFFFF',
+    color: active ? hue : '#57534E',
+  };
+}
+
 export function primaryButtonStyle(disabled = false): CSSProperties {
   return {
     background: tokenColor.accent,

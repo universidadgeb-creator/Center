@@ -1,15 +1,16 @@
 import { useMemo, useRef, useState } from 'react';
 import type { Lead, LeadInsert, LeadPatch, Member, Promotion, Rp } from '../lib/types';
-import { captureInputStyle, checkButtonStyle, checkStyle, formatDate, pillBtnStyle, primaryButtonStyle } from '../lib/style';
+import { captureInputStyle, checkButtonStyle, checkStyle, coloredPillBtnStyle, formatDate, pctColor, pillBtnStyle, primaryButtonStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
 import {
-  LEAD_ESTRATEGIAS, LEAD_STATUSES, PLAN_OPTIONS, STATUS_GROUPS, TIPO_ALTA_OPTIONS,
-  isClosedStatus, isNegativeClosed, isPositiveClosed, isWonStatus, leadStatusColor,
+  LEAD_CATEGORY_FILTERS, LEAD_ESTRATEGIAS, LEAD_STATUSES, PLAN_OPTIONS, STATUS_GROUPS,
+  TIPO_ALTA_OPTIONS, computeLeadBuckets, isClosedStatus, isNegativeClosed, isPositiveClosed,
+  isWonStatus, leadBucketRows, leadStatusColor, matchesLeadCategory,
 } from '../lib/leadStatus';
 import { NEW_PROMOTION_COLOR_CHOICES } from '../hooks/usePromotions';
 import { downloadLeadsTemplate, parseLeadsWorkbook } from '../lib/leadsExcel';
 import { Card, Eyebrow, EmptyState } from '../components/Card';
-import { DonutChart, KpiBarCard, MagnitudeBar } from '../components/Chart';
+import { DonutChart, KpiBarCard, MagnitudeBar, StackedBar } from '../components/Chart';
 import { AddOption } from '../components/AddOption';
 import { Drawer, DrawerField } from '../components/Drawer';
 
@@ -388,8 +389,15 @@ export function LeadsPizarra({
   );
 
   const totalLeads = scoped.length;
-  const totalTour = scoped.filter(l => l.tour).length;
   const totalVenta = scoped.filter(l => isWonStatus(l.status)).length;
+  // Tour → Alta needs every lead that ever toured, including ones that have since closed.
+  const totalTourAll = scoped.filter(l => l.tour).length;
+
+  // Lead → Tour only makes sense against leads still active in the funnel — once a lead is
+  // closed (won or lost) it no longer moves through the tour stage, so counting it here would
+  // understate the true conversion rate of leads still being worked.
+  const tourScoped = useMemo(() => scoped.filter(l => !isPositiveClosed(l.status) && !isNegativeClosed(l.status)), [scoped]);
+  const totalTour = tourScoped.filter(l => l.tour).length;
 
   // Expediente/encuesta/APP only ever apply once a lead has actually closed as a sale — before
   // that there's no member profile to survey or sync APP status against, so scoring them
@@ -408,13 +416,7 @@ export function LeadsPizarra({
   const totalApp = wonWithFlags.filter(f => f.appDescargada).length;
   const totalExpediente = wonWithFlags.filter(f => f.expedienteCompleto).length;
 
-  const enProcesoCount = scoped.filter(l => !isClosedStatus(l.status)).length;
-  const pendientesNuevoCount = scoped.filter(l => l.status === 'Nuevo').length;
-  const pendientesSeguimientoCount = scoped.filter(l => !isClosedStatus(l.status) && l.status !== 'Nuevo').length;
-  const cerradosCount = scoped.filter(l => isClosedStatus(l.status)).length;
-  const cerradosPositivos = scoped.filter(l => isPositiveClosed(l.status)).length;
-  const cerradosNegativos = scoped.filter(l => isNegativeClosed(l.status)).length;
-  const pendientesAppCount = wonWithFlags.filter(f => !f.appDescargada).length;
+  const buckets = useMemo(() => computeLeadBuckets(scoped), [scoped]);
 
   const statusDist = LEAD_STATUSES
     .map(s => ({ label: s, count: scoped.filter(l => l.status === s).length, color: leadStatusColor(s) }))
@@ -431,20 +433,13 @@ export function LeadsPizarra({
     .filter(e => e.count > 0)
     .sort((a, b) => b.count - a.count);
 
-  const promocionDist = promotions
-    .map(p => ({ label: p.label, color: p.color, count: scoped.filter(l => l.promocion === p.label).length }))
-    .filter(p => p.count > 0)
-    .sort((a, b) => b.count - a.count);
-
-  const tipoAltaDist = TIPO_ALTA_OPTIONS
-    .map(t => ({ label: t, count: scoped.filter(l => l.tipo_alta === t).length }))
-    .filter(t => t.count > 0)
-    .sort((a, b) => b.count - a.count);
-
   const rpCierre = allReps.map(rp => {
     const rpLeads = scoped.filter(l => l.rp === rp);
-    const won = rpLeads.filter(l => isWonStatus(l.status)).length;
-    return { rp, total: rpLeads.length, won };
+    const positivos = rpLeads.filter(l => isPositiveClosed(l.status)).length;
+    const negativos = rpLeads.filter(l => isNegativeClosed(l.status)).length;
+    const pendientes = rpLeads.length - positivos - negativos;
+    const pct = rpLeads.length ? Math.round((positivos / rpLeads.length) * 100) : 0;
+    return { rp, total: rpLeads.length, positivos, negativos, pendientes, pct };
   });
 
   const handleFile = async (file: File) => {
@@ -467,9 +462,10 @@ export function LeadsPizarra({
 
   const [search, setSearch] = useState('');
   const [rpFilter, setRpFilter] = useState('todos');
-  const [tab, setTab] = useState<'proceso' | 'cerrados'>('proceso');
+  const [categoryFilter, setCategoryFilter] = useState<typeof LEAD_CATEGORY_FILTERS[number]['key']>('todos');
   const [showForm, setShowForm] = useState(false);
-  const [pendientesOnly, setPendientesOnly] = useState(false);
+  const [encuestaOnly, setEncuestaOnly] = useState(false);
+  const [showUploadMenu, setShowUploadMenu] = useState(false);
 
   const baseFiltered = useMemo(() => {
     let rows = leads;
@@ -479,12 +475,11 @@ export function LeadsPizarra({
     return rows;
   }, [leads, rpFilter, search]);
 
-  const pendientesCount = baseFiltered.filter(l => l.status === 'Nuevo').length;
-  const filtered = pendientesOnly ? baseFiltered.filter(l => l.status === 'Nuevo') : baseFiltered;
-
-  const enProceso = filtered.filter(l => !isClosedStatus(l.status));
-  const cerrados = filtered.filter(l => isClosedStatus(l.status));
-  const list = tab === 'proceso' ? enProceso : cerrados;
+  const filtered = useMemo(() => baseFiltered
+    .filter(l => matchesLeadCategory(l.status, categoryFilter))
+    .filter(l => !encuestaOnly || (isWonStatus(l.status) && !l.member_id)),
+    [baseFiltered, categoryFilter, encuestaOnly]
+  );
 
   const detailLead = detailLeadId ? leads.find(l => l.id === detailLeadId) : undefined;
 
@@ -497,12 +492,30 @@ export function LeadsPizarra({
           <div style={{ fontSize: 13, color: '#8B877F', marginTop: 4 }}>Tablero de seguimiento editable — clic en el nombre para ver el detalle completo.</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={downloadLeadsTemplate}
-            style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 16px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
-          >
-            Descargar plantilla
-          </button>
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowUploadMenu(v => !v)}
+              style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 16px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
+            >
+              Carga masiva ▾
+            </button>
+            {showUploadMenu && (
+              <div style={{ position: 'absolute', top: '110%', left: 0, background: '#fff', border: '1px solid #E4E1DC', borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.08)', zIndex: 10, minWidth: 180, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <button
+                  onClick={() => { downloadLeadsTemplate(); setShowUploadMenu(false); }}
+                  style={{ background: 'none', border: 'none', textAlign: 'left', padding: '10px 14px', fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
+                >
+                  Descargar plantilla
+                </button>
+                <button
+                  onClick={() => { fileInputRef.current?.click(); setShowUploadMenu(false); }}
+                  style={{ background: 'none', border: 'none', textAlign: 'left', padding: '10px 14px', fontSize: 13, color: '#2B2926', cursor: 'pointer', borderTop: '1px solid #EEEBE5' }}
+                >
+                  Subir archivo
+                </button>
+              </div>
+            )}
+          </div>
           <input
             ref={fileInputRef}
             type="file"
@@ -514,12 +527,6 @@ export function LeadsPizarra({
               e.target.value = '';
             }}
           />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            style={{ background: 'none', border: '1px solid #D9D5CE', padding: '10px 16px', borderRadius: 8, fontSize: 13, color: '#2B2926', cursor: 'pointer' }}
-          >
-            Subir archivo
-          </button>
           <button
             onClick={() => setShowForm(s => !s)}
             style={primaryButtonStyle()}
@@ -549,28 +556,21 @@ export function LeadsPizarra({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-        <Card>
+        <Card gap={12} style={{ gridColumn: 'span 2' }}>
           <Eyebrow>Leads totales</Eyebrow>
           <div style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{totalLeads}</div>
+          {leadBucketRows(buckets).map(r => (
+            <MagnitudeBar key={r.key} label={r.label} count={r.count} total={buckets.total} hue={r.hue} title={r.title} />
+          ))}
         </Card>
-        <KpiBarCard label="Lead → Tour (todos)" count={totalTour} total={totalLeads} />
-        <KpiBarCard label="Tour → Alta" count={totalVenta} total={totalTour} />
-        <KpiBarCard label="Expedientes completos" count={totalExpediente} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
-        <KpiBarCard label="Con APP" count={totalApp} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
-        <KpiBarCard label="Con encuesta" count={totalEncuesta} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64', marginTop: -8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: 3, background: WON_ONLY_ACCENT, flex: 'none' }} />
-        Expedientes, APP y encuesta solo aplican a leads con venta cerrada (100% Venta) — no a todo el embudo.
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-        <KpiBarCard label="En proceso" count={enProcesoCount} total={totalLeads} />
-        <KpiBarCard label="Pendientes (Nuevo)" count={pendientesNuevoCount} total={totalLeads} />
-        <KpiBarCard label="Pendientes seguimiento" count={pendientesSeguimientoCount} total={totalLeads} />
-        <KpiBarCard label="Cerrados positivos" count={cerradosPositivos} total={cerradosCount} />
-        <KpiBarCard label="Cerrados negativos" count={cerradosNegativos} total={cerradosCount} />
-        <KpiBarCard label="Pendientes APP" count={pendientesAppCount} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
+        <Card gap={10}>
+          <Eyebrow>Lead → Tour → Alta</Eyebrow>
+          <MagnitudeBar label="Lead → Tour" count={totalTour} total={tourScoped.length} title="Leads que agendaron tour, sin contar los ya cerrados (positivos o negativos)." />
+          <MagnitudeBar label="Tour → Alta" count={totalVenta} total={totalTourAll} title="De los leads con tour, cuántos terminaron en venta cerrada." />
+        </Card>
+        <KpiBarCard label="Expedientes completos" count={totalExpediente} total={wonScoped.length} accent={WON_ONLY_ACCENT} title="Leads con venta cerrada que ya tienen encuesta contestada y APP descargada. Solo aplica a leads con 100% Venta." />
+        <KpiBarCard label="Con APP" count={totalApp} total={wonScoped.length} accent={WON_ONLY_ACCENT} title="Leads con venta cerrada que ya descargaron la app. Solo aplica a leads con 100% Venta." />
+        <KpiBarCard label="Con encuesta" count={totalEncuesta} total={wonScoped.length} accent={WON_ONLY_ACCENT} title="Leads con venta cerrada que ya contestaron la encuesta y quedaron vinculados a un socio. Solo aplica a leads con 100% Venta." />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
@@ -581,6 +581,23 @@ export function LeadsPizarra({
           ) : (
             <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>
           )}
+          <div style={{ borderTop: '1px solid #EEEBE5', paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Eyebrow>% de cierre por RP</Eyebrow>
+            {rpCierre.map(r => (
+              <div key={r.rp} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ fontWeight: 600, color: '#2B2926' }}>{r.rp}</span>
+                  <span style={{ fontWeight: 700, color: pctColor(r.positivos, r.total) }}>{r.pct}% cierre</span>
+                </div>
+                <StackedBar height={12} segments={[
+                  { label: 'Cerrados positivos', count: r.positivos, color: '#1E7A42' },
+                  { label: 'Cerrados negativos', count: r.negativos, color: '#B42318' },
+                  { label: 'Pendientes', count: r.pendientes, color: '#C7C2B8' },
+                ]} />
+              </div>
+            ))}
+            {rpCierre.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Aún no hay leads con RP asignado.</div>}
+          </div>
         </Card>
 
         <Card gap={10}>
@@ -590,29 +607,9 @@ export function LeadsPizarra({
         </Card>
 
         <Card gap={10}>
-          <Eyebrow>% de cierre por RP</Eyebrow>
-          {rpCierre.map(r => <MagnitudeBar key={r.rp} label={r.rp} count={r.won} total={r.total} />)}
-          {rpCierre.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Aún no hay leads con RP asignado.</div>}
-        </Card>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-        <Card gap={10}>
           <Eyebrow>Distribución por estrategia</Eyebrow>
           {estrategiaDist.map(e => <MagnitudeBar key={e.label} label={e.label} count={e.count} total={totalLeads} />)}
           {estrategiaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con estrategia registrada.</div>}
-        </Card>
-
-        <Card gap={10}>
-          <Eyebrow>Distribución por promoción</Eyebrow>
-          {promocionDist.map(p => <MagnitudeBar key={p.label} label={p.label} count={p.count} total={totalLeads} hue={p.color} />)}
-          {promocionDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con promoción registrada.</div>}
-        </Card>
-
-        <Card gap={10}>
-          <Eyebrow>Distribución por tipo de alta</Eyebrow>
-          {tipoAltaDist.map(t => <MagnitudeBar key={t.label} label={t.label} count={t.count} total={totalLeads} />)}
-          {tipoAltaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con tipo de alta registrado.</div>}
         </Card>
       </div>
 
@@ -640,22 +637,21 @@ export function LeadsPizarra({
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button style={pillBtnStyle(tab === 'proceso')} onClick={() => setTab('proceso')}>En proceso ({enProceso.length})</button>
-        <button style={pillBtnStyle(tab === 'cerrados')} onClick={() => setTab('cerrados')}>Cerrados ({cerrados.length})</button>
-        <button style={pillBtnStyle(pendientesOnly)} onClick={() => setPendientesOnly(v => !v)}>Pendientes ({pendientesCount})</button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64' }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#EAF1FB', border: '1px solid #C7D9F0', flex: 'none' }} />
-          Pendiente de contactar (Nuevo)
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64' }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#FDF3DF', border: '1px solid #F3E1B8', flex: 'none' }} />
-          Falta encuesta
-        </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {LEAD_CATEGORY_FILTERS.map(f => (
+          <button
+            key={f.key}
+            style={f.hue ? coloredPillBtnStyle(categoryFilter === f.key, f.hue) : pillBtnStyle(categoryFilter === f.key)}
+            onClick={() => setCategoryFilter(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+        <button style={coloredPillBtnStyle(encuestaOnly, '#C2410C')} onClick={() => setEncuestaOnly(v => !v)}>Pendientes encuesta</button>
       </div>
 
-      {list.length === 0 ? (
-        <EmptyState>{tab === 'proceso' ? 'No hay leads en proceso.' : 'Aún no hay leads cerrados.'}</EmptyState>
+      {filtered.length === 0 ? (
+        <EmptyState>No hay leads que coincidan con este filtro.</EmptyState>
       ) : (
         <div style={{ background: '#fff', border: '1px solid #E4E1DC', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
@@ -673,7 +669,7 @@ export function LeadsPizarra({
                 </tr>
               </thead>
               <tbody>
-                {list.map(lead => (
+                {filtered.map(lead => (
                   <PizarraRow
                     key={lead.id}
                     lead={lead}
@@ -686,7 +682,7 @@ export function LeadsPizarra({
             </table>
           </div>
           <div style={{ padding: '14px 20px', borderTop: '1px solid #E4E1DC', fontSize: 13, color: '#8B877F' }}>
-            <span>Mostrando {list.length} de {filtered.length} leads</span>
+            <span>Mostrando {filtered.length} de {baseFiltered.length} leads</span>
           </div>
         </div>
       )}

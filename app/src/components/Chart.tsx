@@ -9,6 +9,7 @@ export function KpiBarCard({
   count,
   total,
   accent,
+  title,
 }: {
   label: string;
   count: number;
@@ -16,11 +17,13 @@ export function KpiBarCard({
   /** Left-border + tinted background, for metrics that need to visually stand apart (e.g. a
    * different scope/denominator than the rest of the row). */
   accent?: string;
+  /** Native hover tooltip explaining what the indicator measures. */
+  title?: string;
 }) {
   const pct = total ? Math.round((count / total) * 100) : 0;
   const barColor = pctColor(count, total);
   return (
-    <Card style={accent ? { borderLeft: `4px solid ${accent}`, background: `${accent}0D` } : undefined}>
+    <Card title={title} style={accent ? { borderLeft: `4px solid ${accent}`, background: `${accent}0D` } : undefined}>
       <Eyebrow>{label}</Eyebrow>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
         <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{count}</span>
@@ -142,10 +145,10 @@ export function DonutChart({ slices, size = 108 }: { slices: DonutSlice[]; size?
 
 /** Sequential single-hue magnitude bar (all bars share one accent) — for ordered buckets
  * (age ranges) where color-per-bucket would wrongly imply a categorical/status meaning. */
-export function MagnitudeBar({ label, count, total, hue = '#1D4ED8' }: { label: string; count: number; total: number; hue?: string }) {
+export function MagnitudeBar({ label, count, total, hue = '#1D4ED8', title }: { label: string; count: number; total: number; hue?: string; title?: string }) {
   const pct = total ? Math.round((count / total) * 100) : 0;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div title={title} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: color.textQuiet }}>
         <span>{label}</span>
         <span style={{ fontWeight: 600, color: color.textSecondary }}>{count} · {total ? `${pct}%` : '—'}</span>

@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
-import type { Lead, LeadGoal, Promotion } from '../lib/types';
-import { formatDate, initialsOf, pctColor, pctLabel, checkStyle, pillBtnStyle } from '../lib/style';
+import type { Lead, LeadGoal } from '../lib/types';
+import { formatDate, initialsOf, pctColor, pctLabel, checkStyle, coloredPillBtnStyle, pillBtnStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
 import {
-  isClosedStatus, isNegativeClosed, isPositiveClosed, isWonStatus, leadStatusColor,
-  LEAD_STATUSES, LEAD_ESTRATEGIAS, STATUS_GROUPS, TIPO_ALTA_OPTIONS,
+  isNegativeClosed, isPositiveClosed, isWonStatus, leadStatusColor,
+  LEAD_STATUSES, LEAD_ESTRATEGIAS, LEAD_CATEGORY_FILTERS, STATUS_GROUPS,
+  computeLeadBuckets, leadBucketRows, matchesLeadCategory,
 } from '../lib/leadStatus';
 import { Card, Eyebrow, EmptyState } from '../components/Card';
-import { DonutChart, KpiBarCard, MagnitudeBar } from '../components/Chart';
+import { DonutChart, KpiBarCard, MagnitudeBar, StackedBar } from '../components/Chart';
 
 const GENERAL_RP = '';
 const WON_ONLY_ACCENT = '#7C3AED';
@@ -43,12 +44,10 @@ export function LeadsSeguimientoRp({
   leads,
   goals,
   setGoal,
-  promotions,
 }: {
   leads: Lead[];
   goals: LeadGoal[];
   setGoal: (month: string, rp: string, meta_altas: number) => void;
-  promotions: Promotion[];
 }) {
   const months = useMemo(() => {
     const set = new Set<string>();
@@ -79,7 +78,12 @@ export function LeadsSeguimientoRp({
   const scopedRpLeads = useMemo(() => scoped.filter(l => l.rp === activeRp), [scoped, activeRp]);
 
   const total = scopedRpLeads.length;
-  const tour = scopedRpLeads.filter(l => l.tour).length;
+  // Tour → Alta needs every lead that ever toured, including ones that have since closed.
+  const tourAll = scopedRpLeads.filter(l => l.tour).length;
+  // Lead → Tour only makes sense against leads still active in the funnel — see the same note
+  // in Concentrado de Leads (LeadsPizarra.tsx).
+  const tourScoped = useMemo(() => scopedRpLeads.filter(l => !isPositiveClosed(l.status) && !isNegativeClosed(l.status)), [scopedRpLeads]);
+  const tour = tourScoped.filter(l => l.tour).length;
   const won = scopedRpLeads.filter(l => isWonStatus(l.status)).length;
 
   // Expediente/encuesta/APP only ever apply once a lead has actually closed as a sale — see
@@ -88,7 +92,6 @@ export function LeadsSeguimientoRp({
   const expedienteCompleto = wonLeads.filter(l => l.member_id).length;
   const conApp = wonLeads.filter(l => l.app_downloaded || l.member_id).length;
   const conEncuesta = wonLeads.filter(l => l.member_id).length;
-  const pendientesAppCount = wonLeads.length - conApp;
 
   const montoTotal = wonLeads.reduce((sum, l) => sum + (l.monto_con_iva ?? 0), 0);
   const ticketPromedio = wonLeads.length ? montoTotal / wonLeads.length : 0;
@@ -98,12 +101,11 @@ export function LeadsSeguimientoRp({
     .filter(d => Number.isFinite(d) && d >= 0);
   const promedioDiasCierre = diasCierre.length ? diasCierre.reduce((a, b) => a + b, 0) / diasCierre.length : null;
 
-  const enProcesoCount = scopedRpLeads.filter(l => !isClosedStatus(l.status)).length;
-  const pendientesNuevoCount = scopedRpLeads.filter(l => l.status === 'Nuevo').length;
-  const pendientesSeguimientoCount = scopedRpLeads.filter(l => !isClosedStatus(l.status) && l.status !== 'Nuevo').length;
-  const cerradosCount = scopedRpLeads.filter(l => isClosedStatus(l.status)).length;
-  const cerradosPositivos = scopedRpLeads.filter(l => isPositiveClosed(l.status)).length;
-  const cerradosNegativos = scopedRpLeads.filter(l => isNegativeClosed(l.status)).length;
+  const buckets = useMemo(() => computeLeadBuckets(scopedRpLeads), [scopedRpLeads]);
+  const rpCierrePositivos = scopedRpLeads.filter(l => isPositiveClosed(l.status)).length;
+  const rpCierreNegativos = scopedRpLeads.filter(l => isNegativeClosed(l.status)).length;
+  const rpCierrePendientes = total - rpCierrePositivos - rpCierreNegativos;
+  const rpCierrePct = total ? Math.round((rpCierrePositivos / total) * 100) : 0;
 
   const statusDist = LEAD_STATUSES
     .map(s => ({ label: s, count: scopedRpLeads.filter(l => l.status === s).length, color: leadStatusColor(s) }))
@@ -118,16 +120,6 @@ export function LeadsSeguimientoRp({
   const estrategiaDist = LEAD_ESTRATEGIAS
     .map(e => ({ label: e, count: scopedRpLeads.filter(l => l.estrategia === e).length }))
     .filter(e => e.count > 0)
-    .sort((a, b) => b.count - a.count);
-
-  const promocionDist = promotions
-    .map(p => ({ label: p.label, color: p.color, count: scopedRpLeads.filter(l => l.promocion === p.label).length }))
-    .filter(p => p.count > 0)
-    .sort((a, b) => b.count - a.count);
-
-  const tipoAltaDist = TIPO_ALTA_OPTIONS
-    .map(t => ({ label: t, count: scopedRpLeads.filter(l => l.tipo_alta === t).length }))
-    .filter(t => t.count > 0)
     .sort((a, b) => b.count - a.count);
 
   const goalsByRp = useMemo(() => {
@@ -148,12 +140,11 @@ export function LeadsSeguimientoRp({
   const generalMeta = goalsByRp.get(GENERAL_RP) ?? 0;
   const generalReal = scoped.filter(l => isWonStatus(l.status)).length;
 
-  const [tab, setTab] = useState<'proceso' | 'cerrados'>('proceso');
-  const [pendientesOnly, setPendientesOnly] = useState(false);
-  const enProceso = rpLeads.filter(l => !isClosedStatus(l.status));
-  const cerrados = rpLeads.filter(l => isClosedStatus(l.status));
-  const pendientesCount = rpLeads.filter(l => l.status === 'Nuevo').length;
-  const list = (tab === 'proceso' ? enProceso : cerrados).filter(l => !pendientesOnly || l.status === 'Nuevo');
+  const [categoryFilter, setCategoryFilter] = useState<typeof LEAD_CATEGORY_FILTERS[number]['key']>('todos');
+  const [encuestaOnly, setEncuestaOnly] = useState(false);
+  const list = rpLeads
+    .filter(l => matchesLeadCategory(l.status, categoryFilter))
+    .filter(l => !encuestaOnly || (isWonStatus(l.status) && !l.member_id));
 
   if (allReps.length === 0) {
     return (
@@ -224,28 +215,21 @@ export function LeadsSeguimientoRp({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-        <Card>
+        <Card gap={12} style={{ gridColumn: 'span 2' }}>
           <Eyebrow>Leads totales</Eyebrow>
           <div style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{total}</div>
+          {leadBucketRows(buckets).map(r => (
+            <MagnitudeBar key={r.key} label={r.label} count={r.count} total={buckets.total} hue={r.hue} title={r.title} />
+          ))}
         </Card>
-        <KpiBarCard label="Lead → Tour (todos)" count={tour} total={total} />
-        <KpiBarCard label="Tour → Alta" count={won} total={tour} />
-        <KpiBarCard label="Expedientes completos" count={expedienteCompleto} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
-        <KpiBarCard label="Con APP" count={conApp} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
-        <KpiBarCard label="Con encuesta" count={conEncuesta} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64', marginTop: -8 }}>
-        <span style={{ width: 10, height: 10, borderRadius: 3, background: WON_ONLY_ACCENT, flex: 'none' }} />
-        Expedientes, APP y encuesta solo aplican a leads con venta cerrada (100% Venta) — no a todo el embudo.
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
-        <KpiBarCard label="En proceso" count={enProcesoCount} total={total} />
-        <KpiBarCard label="Pendientes (Nuevo)" count={pendientesNuevoCount} total={total} />
-        <KpiBarCard label="Pendientes seguimiento" count={pendientesSeguimientoCount} total={total} />
-        <KpiBarCard label="Cerrados positivos" count={cerradosPositivos} total={cerradosCount} />
-        <KpiBarCard label="Cerrados negativos" count={cerradosNegativos} total={cerradosCount} />
-        <KpiBarCard label="Pendientes APP" count={pendientesAppCount} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
+        <Card gap={10}>
+          <Eyebrow>Lead → Tour → Alta</Eyebrow>
+          <MagnitudeBar label="Lead → Tour" count={tour} total={tourScoped.length} title="Leads que agendaron tour, sin contar los ya cerrados (positivos o negativos)." />
+          <MagnitudeBar label="Tour → Alta" count={won} total={tourAll} title="De los leads con tour, cuántos terminaron en venta cerrada." />
+        </Card>
+        <KpiBarCard label="Expedientes completos" count={expedienteCompleto} total={wonLeads.length} accent={WON_ONLY_ACCENT} title="Leads con venta cerrada que ya tienen encuesta contestada y APP descargada. Solo aplica a leads con 100% Venta." />
+        <KpiBarCard label="Con APP" count={conApp} total={wonLeads.length} accent={WON_ONLY_ACCENT} title="Leads con venta cerrada que ya descargaron la app. Solo aplica a leads con 100% Venta." />
+        <KpiBarCard label="Con encuesta" count={conEncuesta} total={wonLeads.length} accent={WON_ONLY_ACCENT} title="Leads con venta cerrada que ya contestaron la encuesta y quedaron vinculados a un socio. Solo aplica a leads con 100% Venta." />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
@@ -271,6 +255,17 @@ export function LeadsSeguimientoRp({
           ) : (
             <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>
           )}
+          <div style={{ borderTop: '1px solid #EEEBE5', paddingTop: 12, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+              <Eyebrow>% de cierre</Eyebrow>
+              <span style={{ fontWeight: 700, color: pctColor(rpCierrePositivos, total) }}>{rpCierrePct}% cierre</span>
+            </div>
+            <StackedBar height={12} segments={[
+              { label: 'Cerrados positivos', count: rpCierrePositivos, color: '#1E7A42' },
+              { label: 'Cerrados negativos', count: rpCierreNegativos, color: '#B42318' },
+              { label: 'Pendientes', count: rpCierrePendientes, color: '#C7C2B8' },
+            ]} />
+          </div>
         </Card>
 
         <Card gap={10}>
@@ -278,40 +273,29 @@ export function LeadsSeguimientoRp({
           {statusDist.map(s => <MagnitudeBar key={s.label} label={s.label} count={s.count} total={total} hue={s.color} />)}
           {statusDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>}
         </Card>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
         <Card gap={10}>
           <Eyebrow>Distribución por estrategia</Eyebrow>
           {estrategiaDist.map(e => <MagnitudeBar key={e.label} label={e.label} count={e.count} total={total} />)}
           {estrategiaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con estrategia registrada.</div>}
         </Card>
-
-        <Card gap={10}>
-          <Eyebrow>Distribución por promoción</Eyebrow>
-          {promocionDist.map(p => <MagnitudeBar key={p.label} label={p.label} count={p.count} total={total} hue={p.color} />)}
-          {promocionDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con promoción registrada.</div>}
-        </Card>
-
-        <Card gap={10}>
-          <Eyebrow>Distribución por tipo de alta</Eyebrow>
-          {tipoAltaDist.map(t => <MagnitudeBar key={t.label} label={t.label} count={t.count} total={total} />)}
-          {tipoAltaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con tipo de alta registrado.</div>}
-        </Card>
       </div>
 
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button style={pillBtnStyle(tab === 'proceso')} onClick={() => setTab('proceso')}>En proceso ({enProceso.length})</button>
-        <button style={pillBtnStyle(tab === 'cerrados')} onClick={() => setTab('cerrados')}>Cerrados ({cerrados.length})</button>
-        <button style={pillBtnStyle(pendientesOnly)} onClick={() => setPendientesOnly(v => !v)}>Pendientes ({pendientesCount})</button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64' }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#EAF1FB', border: '1px solid #C7D9F0', flex: 'none' }} />
-          Pendiente de contactar (Nuevo)
-        </div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        {LEAD_CATEGORY_FILTERS.map(f => (
+          <button
+            key={f.key}
+            style={f.hue ? coloredPillBtnStyle(categoryFilter === f.key, f.hue) : pillBtnStyle(categoryFilter === f.key)}
+            onClick={() => setCategoryFilter(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+        <button style={coloredPillBtnStyle(encuestaOnly, '#C2410C')} onClick={() => setEncuestaOnly(v => !v)}>Pendientes encuesta</button>
       </div>
 
       {list.length === 0 ? (
-        <EmptyState>{tab === 'proceso' ? 'No hay leads en proceso.' : 'Aún no hay leads cerrados.'}</EmptyState>
+        <EmptyState>No hay leads que coincidan con este filtro.</EmptyState>
       ) : (
         <div style={{ background: '#fff', border: '1px solid #E4E1DC', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>

@@ -7,14 +7,18 @@ export function Card({
   style,
   gap = 8,
   padding = 20,
+  title,
 }: {
   children: ReactNode;
   style?: CSSProperties;
   gap?: number;
   padding?: number;
+  /** Native hover tooltip — used for indicator explanations shown only on hover. */
+  title?: string;
 }) {
   return (
     <div
+      title={title}
       style={{
         background: color.surface,
         border: `1px solid ${color.border}`,

@@ -86,18 +86,6 @@ function sortMembers(rows: Member[], key: SortKey, dir: SortDir): Member[] {
   return sorted;
 }
 
-/** Compact colored-dot + label + "count · pct" row, used inside "Total socios" so the risk
- * and pendientes breakdown reads at a glance without scanning across separate cards. */
-function MiniStatRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: 'none' }} />
-      <span style={{ color: '#6E6A64', flex: 1 }}>{label}</span>
-      <span style={{ fontWeight: 600, color: '#2B2926' }}>{count} · {pctLabel(count, total)}</span>
-    </div>
-  );
-}
-
 function IndicatorCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card gap={14}>
@@ -231,13 +219,12 @@ export function Concentrado({
         <Card gap={10}>
           <Eyebrow>Total socios</Eyebrow>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#18181B' }}>{totalAll}</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 }}>
-            <MiniStatRow label="Pendientes de revisión" count={pendientesCount} total={totalAll} color="#92610A" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 2 }}>
             {riskDist.map(r => (
-              <MiniStatRow key={r.label} label={`Riesgo ${r.label.toLowerCase()}`} count={r.count} total={totalAll} color={r.color} />
+              <MagnitudeBar key={r.label} label={`Riesgo ${r.label.toLowerCase()}`} count={r.count} total={totalAll} hue={r.color} />
             ))}
             {riskSinEvaluar > 0 && (
-              <MiniStatRow label="Sin evaluar" count={riskSinEvaluar} total={totalAll} color="#928D85" />
+              <MagnitudeBar label="Sin evaluar" count={riskSinEvaluar} total={totalAll} hue="#928D85" />
             )}
           </div>
         </Card>

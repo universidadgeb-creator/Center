@@ -27,6 +27,7 @@ const CLOSED_STATUSES: ReadonlySet<string> = new Set([
   'No existe',
   'Tiene total pass',
   'No venta / No interesa',
+  'Nunca contestó',
 ]);
 
 export function isClosedStatus(status: string | null | undefined): boolean {
@@ -84,6 +85,68 @@ export const STATUS_GROUPS: { label: string; color: string; statuses: string[] }
 
 export function leadStatusColor(status: string): string {
   return LEAD_STATUS_COLORS[status] ?? '#78716C';
+}
+
+/** "In contact, no appointment yet" sub-stages — splits the open pipeline (excluding Nuevo and
+ * closed statuses) into "pendientes seguimiento" vs "en proceso" for the Leads totales breakdown. */
+const SEGUIMIENTO_STATUSES: ReadonlySet<string> = new Set([
+  '10% Contactado', '20% Contactado con respuesta', 'Llamar después',
+]);
+
+export type LeadCategory = 'todos' | 'nuevos' | 'seguimiento' | 'proceso' | 'positivos' | 'negativos';
+
+/** Single source of truth for the 5-way partition used by both the Leads totales breakdown
+ * and the table category filters — every status falls into exactly one bucket. */
+export function matchesLeadCategory(status: string, category: LeadCategory): boolean {
+  switch (category) {
+    case 'nuevos': return status === 'Nuevo';
+    case 'seguimiento': return !isClosedStatus(status) && status !== 'Nuevo' && SEGUIMIENTO_STATUSES.has(status);
+    case 'proceso': return !isClosedStatus(status) && status !== 'Nuevo' && !SEGUIMIENTO_STATUSES.has(status);
+    case 'positivos': return isPositiveClosed(status);
+    case 'negativos': return isNegativeClosed(status);
+    default: return true;
+  }
+}
+
+export const LEAD_CATEGORY_FILTERS: { key: LeadCategory; label: string; hue?: string }[] = [
+  { key: 'todos', label: 'Todos' },
+  { key: 'nuevos', label: 'Nuevos' },
+  { key: 'seguimiento', label: 'Pendientes seguimiento', hue: '#1D4ED8' },
+  { key: 'proceso', label: 'En proceso' },
+  { key: 'positivos', label: 'Cerrados positivos' },
+  { key: 'negativos', label: 'Cerrados negativos' },
+];
+
+export interface LeadBuckets {
+  nuevos: number;
+  pendientesSeguimiento: number;
+  enProceso: number;
+  cerradosPositivos: number;
+  cerradosNegativos: number;
+  total: number;
+}
+
+export function computeLeadBuckets<T extends { status: string }>(leads: T[]): LeadBuckets {
+  return {
+    nuevos: leads.filter(l => matchesLeadCategory(l.status, 'nuevos')).length,
+    pendientesSeguimiento: leads.filter(l => matchesLeadCategory(l.status, 'seguimiento')).length,
+    enProceso: leads.filter(l => matchesLeadCategory(l.status, 'proceso')).length,
+    cerradosPositivos: leads.filter(l => matchesLeadCategory(l.status, 'positivos')).length,
+    cerradosNegativos: leads.filter(l => matchesLeadCategory(l.status, 'negativos')).length,
+    total: leads.length,
+  };
+}
+
+/** Row copy (label, color, hover explanation) for rendering the Leads totales breakdown —
+ * kept alongside the bucket logic so Concentrado de Leads and Portal RP never drift. */
+export function leadBucketRows(buckets: LeadBuckets): { key: string; label: string; count: number; hue: string; title: string }[] {
+  return [
+    { key: 'nuevos', label: 'Nuevos', count: buckets.nuevos, hue: '#78716C', title: 'Leads que aún no han sido contactados.' },
+    { key: 'seguimiento', label: 'Pendientes seguimiento', count: buckets.pendientesSeguimiento, hue: '#1D4ED8', title: 'Leads ya contactados, en espera de agendar cita o tour.' },
+    { key: 'proceso', label: 'En proceso', count: buckets.enProceso, hue: '#B45309', title: 'Leads con cita o tour en curso, aún sin cerrar.' },
+    { key: 'positivos', label: 'Cerrados positivos', count: buckets.cerradosPositivos, hue: '#1E7A42', title: 'Leads que se convirtieron en venta (100% Venta).' },
+    { key: 'negativos', label: 'Cerrados negativos', count: buckets.cerradosNegativos, hue: '#B42318', title: 'Leads cerrados sin venta.' },
+  ];
 }
 
 /** Membership plan lengths — fixed list, no "add new" button requested for this one. */
