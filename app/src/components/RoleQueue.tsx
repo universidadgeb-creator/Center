@@ -3,7 +3,12 @@ import type { CSSProperties, ReactNode } from 'react';
 import type { Member } from '../lib/types';
 import { EmptyState } from './Card';
 
-type Tab = 'pendientes' | 'completos';
+export interface RoleQueueTab {
+  key: string;
+  label: string;
+  filter: (m: Member) => boolean;
+  emptyMessage?: string;
+}
 
 function segmentBtnStyle(active: boolean): CSSProperties {
   return {
@@ -40,16 +45,25 @@ export function RoleQueue({
   isPending,
   renderRow,
   emptyPendingMessage = 'No hay pendientes. Todo al día.',
+  tabs,
 }: {
   title: string;
   subtitle: string;
   members: Member[];
-  isPending: (m: Member) => boolean;
+  /** Ignored when `tabs` is provided — kept for the default Pendientes/Completos split. */
+  isPending?: (m: Member) => boolean;
   renderRow: (m: Member) => ReactNode;
   emptyPendingMessage?: string;
+  /** Custom tab set (e.g. one tab per missing field) — replaces the default Pendientes/Completos split. */
+  tabs?: RoleQueueTab[];
 }) {
+  const resolvedTabs = useMemo<RoleQueueTab[]>(() => tabs ?? [
+    { key: 'pendientes', label: 'Pendientes', filter: isPending!, emptyMessage: emptyPendingMessage },
+    { key: 'completos', label: 'Completos', filter: m => !isPending!(m), emptyMessage: 'Aún no hay socios completos.' },
+  ], [tabs, isPending, emptyPendingMessage]);
+
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<Tab>('pendientes');
+  const [tab, setTab] = useState(resolvedTabs[0].key);
 
   const searched = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -57,9 +71,8 @@ export function RoleQueue({
     return members.filter(m => m.name.toLowerCase().includes(q));
   }, [members, search]);
 
-  const pending = searched.filter(isPending);
-  const done = searched.filter(m => !isPending(m));
-  const list = tab === 'pendientes' ? pending : done;
+  const activeTab = resolvedTabs.find(t => t.key === tab) ?? resolvedTabs[0];
+  const list = searched.filter(activeTab.filter);
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: 32, display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -76,18 +89,17 @@ export function RoleQueue({
         style={{ border: '1px solid #E4E1DC', borderRadius: 8, padding: '12px 16px', fontSize: 15, fontFamily: 'inherit', color: '#2B2926' }}
       />
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button style={segmentBtnStyle(tab === 'pendientes')} onClick={() => setTab('pendientes')}>
-          Pendientes <span style={countBadgeStyle(tab === 'pendientes')}>{pending.length}</span>
-        </button>
-        <button style={segmentBtnStyle(tab === 'completos')} onClick={() => setTab('completos')}>
-          Completos <span style={countBadgeStyle(tab === 'completos')}>{done.length}</span>
-        </button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {resolvedTabs.map(t => (
+          <button key={t.key} style={segmentBtnStyle(tab === t.key)} onClick={() => setTab(t.key)}>
+            {t.label} <span style={countBadgeStyle(tab === t.key)}>{searched.filter(t.filter).length}</span>
+          </button>
+        ))}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {list.length === 0 && (
-          <EmptyState>{tab === 'pendientes' ? emptyPendingMessage : 'Aún no hay socios completos.'}</EmptyState>
+          <EmptyState>{activeTab.emptyMessage ?? 'No hay resultados.'}</EmptyState>
         )}
         {list.map(m => renderRow(m))}
       </div>
