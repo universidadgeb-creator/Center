@@ -1,30 +1,26 @@
 import { useMemo, useRef, useState } from 'react';
 import type { Lead, LeadInsert, LeadPatch, Member, Promotion, Rp } from '../lib/types';
-import { captureInputStyle, checkButtonStyle, checkStyle, formatDate, pctColor, pctLabel, pillBtnStyle, primaryButtonStyle } from '../lib/style';
+import { captureInputStyle, checkButtonStyle, checkStyle, formatDate, pillBtnStyle, primaryButtonStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
-import { LEAD_ESTRATEGIAS, LEAD_STATUSES, PLAN_OPTIONS, TIPO_ALTA_OPTIONS, isClosedStatus, isWonStatus, leadStatusColor } from '../lib/leadStatus';
+import {
+  LEAD_ESTRATEGIAS, LEAD_STATUSES, PLAN_OPTIONS, STATUS_GROUPS, TIPO_ALTA_OPTIONS,
+  isClosedStatus, isNegativeClosed, isPositiveClosed, isWonStatus, leadStatusColor,
+} from '../lib/leadStatus';
 import { NEW_PROMOTION_COLOR_CHOICES } from '../hooks/usePromotions';
 import { downloadLeadsTemplate, parseLeadsWorkbook } from '../lib/leadsExcel';
 import { Card, Eyebrow, EmptyState } from '../components/Card';
-import { MagnitudeBar } from '../components/Chart';
+import { DonutChart, KpiBarCard, MagnitudeBar } from '../components/Chart';
 import { AddOption } from '../components/AddOption';
 import { Drawer, DrawerField } from '../components/Drawer';
 
-/** Compact label+count+pct row with a colored identity dot — used for distributions with too
- * many categories (status has 15, estrategia has 11) to read well as a chart. */
-function DistributionRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: 'none' }} />
-      <span style={{ color: '#6E6A64', flex: 1 }}>{label}</span>
-      <span style={{ fontWeight: 600, color: '#2B2926' }}>{count} · {pctLabel(count, total)}</span>
-    </div>
-  );
-}
+/** Left-border accent for KPIs whose denominator is only won leads, not every lead — so the
+ * different scope reads visually, not just in the fine-print note underneath. */
+const WON_ONLY_ACCENT = '#7C3AED';
 
 const cellStyle: React.CSSProperties = { padding: '6px 6px', whiteSpace: 'nowrap' };
 const thStyleBase: React.CSSProperties = { padding: '8px 6px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#948F86', fontWeight: 500, borderBottom: '2px solid #191A23', whiteSpace: 'normal', lineHeight: 1.2 };
 const inputCellStyle: React.CSSProperties = { ...captureInputStyle(), padding: '6px 8px', fontSize: 12, minWidth: 0, width: '100%', flex: 'none' };
+const dividerStyle: React.CSSProperties = { borderLeft: '2px solid #D9D5CE' };
 const today = () => new Date().toISOString().slice(0, 10);
 
 function promotionColor(promotions: Promotion[], label: string | null): string | undefined {
@@ -253,11 +249,13 @@ function PizarraRow({
   onOpenDetail: () => void;
   updateLead: (id: string, patch: LeadPatch) => void;
 }) {
+  const isWon = isWonStatus(lead.status);
   const encuestaHecha = !!lead.member_id;
   const appDescargada = lead.member_id ? !!member?.app_downloaded : lead.app_downloaded;
   const expedienteCompleto = encuestaHecha && appDescargada;
-  const needsSurvey = isWonStatus(lead.status) && !lead.member_id;
+  const needsSurvey = isWon && !lead.member_id;
   const isPendiente = lead.status === 'Nuevo';
+  const na = <span style={{ color: '#C7C2B8' }}>—</span>;
 
   const toggleTour = () => {
     const turningOn = !lead.tour;
@@ -301,18 +299,18 @@ function PizarraRow({
       <td style={{ ...cellStyle, textAlign: 'center' }}>
         <button onClick={toggleTour} style={checkButtonStyle(lead.tour)}>{lead.tour ? '✓' : '✕'}</button>
       </td>
-      <td style={{ ...cellStyle, textAlign: 'center' }}>
-        <span style={checkStyle(expedienteCompleto)}>{expedienteCompleto ? '✓' : '✕'}</span>
+      <td style={{ ...cellStyle, ...dividerStyle, textAlign: 'center' }}>
+        {isWon ? <span style={checkStyle(expedienteCompleto)}>{expedienteCompleto ? '✓' : '✕'}</span> : na}
       </td>
       <td style={{ ...cellStyle, textAlign: 'center', fontSize: 11 }}>
-        {needsSurvey ? (
+        {!isWon ? na : needsSurvey ? (
           <span style={{ fontWeight: 600, color: '#92610A' }}>Falta</span>
         ) : (
           <span style={checkStyle(encuestaHecha)}>{encuestaHecha ? '✓' : '✕'}</span>
         )}
       </td>
       <td style={{ ...cellStyle, textAlign: 'center' }}>
-        {lead.member_id ? (
+        {!isWon ? na : lead.member_id ? (
           <span style={checkStyle(appDescargada)}>{appDescargada ? '✓' : '✕'}</span>
         ) : (
           <button onClick={() => updateLead(lead.id, { app_downloaded: !lead.app_downloaded })} style={checkButtonStyle(lead.app_downloaded)}>
@@ -393,26 +391,55 @@ export function LeadsPizarra({
   const totalTour = scoped.filter(l => l.tour).length;
   const totalVenta = scoped.filter(l => isWonStatus(l.status)).length;
 
-  const scopedWithFlags = useMemo(
-    () => scoped.map(l => {
+  // Expediente/encuesta/APP only ever apply once a lead has actually closed as a sale — before
+  // that there's no member profile to survey or sync APP status against, so scoring them
+  // against every lead (including ones still mid-funnel) made the % look artificially low.
+  const wonScoped = useMemo(() => scoped.filter(l => isWonStatus(l.status)), [scoped]);
+  const wonWithFlags = useMemo(
+    () => wonScoped.map(l => {
       const member = l.member_id ? memberById.get(l.member_id) : undefined;
       const encuestaHecha = !!l.member_id;
       const appDescargada = l.member_id ? !!member?.app_downloaded : l.app_downloaded;
       return { encuestaHecha, appDescargada, expedienteCompleto: encuestaHecha && appDescargada };
     }),
-    [scoped, memberById]
+    [wonScoped, memberById]
   );
-  const totalEncuesta = scopedWithFlags.filter(f => f.encuestaHecha).length;
-  const totalApp = scopedWithFlags.filter(f => f.appDescargada).length;
-  const totalExpediente = scopedWithFlags.filter(f => f.expedienteCompleto).length;
+  const totalEncuesta = wonWithFlags.filter(f => f.encuestaHecha).length;
+  const totalApp = wonWithFlags.filter(f => f.appDescargada).length;
+  const totalExpediente = wonWithFlags.filter(f => f.expedienteCompleto).length;
+
+  const enProcesoCount = scoped.filter(l => !isClosedStatus(l.status)).length;
+  const pendientesNuevoCount = scoped.filter(l => l.status === 'Nuevo').length;
+  const pendientesSeguimientoCount = scoped.filter(l => !isClosedStatus(l.status) && l.status !== 'Nuevo').length;
+  const cerradosCount = scoped.filter(l => isClosedStatus(l.status)).length;
+  const cerradosPositivos = scoped.filter(l => isPositiveClosed(l.status)).length;
+  const cerradosNegativos = scoped.filter(l => isNegativeClosed(l.status)).length;
+  const pendientesAppCount = wonWithFlags.filter(f => !f.appDescargada).length;
 
   const statusDist = LEAD_STATUSES
     .map(s => ({ label: s, count: scoped.filter(l => l.status === s).length, color: leadStatusColor(s) }))
-    .filter(s => s.count > 0);
+    .filter(s => s.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const statusGroupDist = STATUS_GROUPS
+    .map(g => ({ label: g.label, color: g.color, count: scoped.filter(l => g.statuses.includes(l.status)).length }))
+    .filter(g => g.count > 0)
+    .sort((a, b) => b.count - a.count);
 
   const estrategiaDist = LEAD_ESTRATEGIAS
     .map(e => ({ label: e, count: scoped.filter(l => l.estrategia === e).length }))
-    .filter(e => e.count > 0);
+    .filter(e => e.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const promocionDist = promotions
+    .map(p => ({ label: p.label, color: p.color, count: scoped.filter(l => l.promocion === p.label).length }))
+    .filter(p => p.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const tipoAltaDist = TIPO_ALTA_OPTIONS
+    .map(t => ({ label: t, count: scoped.filter(l => l.tipo_alta === t).length }))
+    .filter(t => t.count > 0)
+    .sort((a, b) => b.count - a.count);
 
   const rpCierre = allReps.map(rp => {
     const rpLeads = scoped.filter(l => l.rp === rp);
@@ -526,60 +553,66 @@ export function LeadsPizarra({
           <Eyebrow>Leads totales</Eyebrow>
           <div style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{totalLeads}</div>
         </Card>
-        <Card>
-          <Eyebrow>% Lead → Tour</Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{totalTour}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: pctColor(totalTour, totalLeads) }}>{pctLabel(totalTour, totalLeads)}</span>
-          </div>
-        </Card>
-        <Card>
-          <Eyebrow>% Tour → Alta</Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{totalVenta}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: pctColor(totalVenta, totalTour) }}>{pctLabel(totalVenta, totalTour)}</span>
-          </div>
-        </Card>
-        <Card>
-          <Eyebrow>Expedientes completos</Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{totalExpediente}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: pctColor(totalExpediente, totalLeads) }}>de {totalLeads}</span>
-          </div>
-        </Card>
-        <Card>
-          <Eyebrow>Con APP</Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{totalApp}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: pctColor(totalApp, totalLeads) }}>de {totalLeads}</span>
-          </div>
-        </Card>
-        <Card>
-          <Eyebrow>Con encuesta</Eyebrow>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{totalEncuesta}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: pctColor(totalEncuesta, totalLeads) }}>de {totalLeads}</span>
-          </div>
-        </Card>
+        <KpiBarCard label="Lead → Tour (todos)" count={totalTour} total={totalLeads} />
+        <KpiBarCard label="Tour → Alta" count={totalVenta} total={totalTour} />
+        <KpiBarCard label="Expedientes completos" count={totalExpediente} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
+        <KpiBarCard label="Con APP" count={totalApp} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
+        <KpiBarCard label="Con encuesta" count={totalEncuesta} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64', marginTop: -8 }}>
+        <span style={{ width: 10, height: 10, borderRadius: 3, background: WON_ONLY_ACCENT, flex: 'none' }} />
+        Expedientes, APP y encuesta solo aplican a leads con venta cerrada (100% Venta) — no a todo el embudo.
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+        <KpiBarCard label="En proceso" count={enProcesoCount} total={totalLeads} />
+        <KpiBarCard label="Pendientes (Nuevo)" count={pendientesNuevoCount} total={totalLeads} />
+        <KpiBarCard label="Pendientes seguimiento" count={pendientesSeguimientoCount} total={totalLeads} />
+        <KpiBarCard label="Cerrados positivos" count={cerradosPositivos} total={cerradosCount} />
+        <KpiBarCard label="Cerrados negativos" count={cerradosNegativos} total={cerradosCount} />
+        <KpiBarCard label="Pendientes APP" count={pendientesAppCount} total={wonScoped.length} accent={WON_ONLY_ACCENT} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-        <Card gap={10}>
-          <Eyebrow>Distribución por status</Eyebrow>
-          {statusDist.map(s => <DistributionRow key={s.label} label={s.label} count={s.count} total={totalLeads} color={s.color} />)}
-          {statusDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>}
+        <Card gap={12}>
+          <Eyebrow>Resumen de status (agrupado)</Eyebrow>
+          {statusGroupDist.length > 0 ? (
+            <DonutChart slices={statusGroupDist.map(g => ({ label: g.label, count: g.count, color: g.color }))} />
+          ) : (
+            <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>
+          )}
         </Card>
 
         <Card gap={10}>
-          <Eyebrow>Distribución por estrategia</Eyebrow>
-          {estrategiaDist.map(e => <DistributionRow key={e.label} label={e.label} count={e.count} total={totalLeads} color="#57534E" />)}
-          {estrategiaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con estrategia registrada.</div>}
+          <Eyebrow>Distribución por status (detalle)</Eyebrow>
+          {statusDist.map(s => <MagnitudeBar key={s.label} label={s.label} count={s.count} total={totalLeads} hue={s.color} />)}
+          {statusDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>}
         </Card>
 
         <Card gap={10}>
           <Eyebrow>% de cierre por RP</Eyebrow>
           {rpCierre.map(r => <MagnitudeBar key={r.rp} label={r.rp} count={r.won} total={r.total} />)}
           {rpCierre.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Aún no hay leads con RP asignado.</div>}
+        </Card>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+        <Card gap={10}>
+          <Eyebrow>Distribución por estrategia</Eyebrow>
+          {estrategiaDist.map(e => <MagnitudeBar key={e.label} label={e.label} count={e.count} total={totalLeads} />)}
+          {estrategiaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con estrategia registrada.</div>}
+        </Card>
+
+        <Card gap={10}>
+          <Eyebrow>Distribución por promoción</Eyebrow>
+          {promocionDist.map(p => <MagnitudeBar key={p.label} label={p.label} count={p.count} total={totalLeads} hue={p.color} />)}
+          {promocionDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con promoción registrada.</div>}
+        </Card>
+
+        <Card gap={10}>
+          <Eyebrow>Distribución por tipo de alta</Eyebrow>
+          {tipoAltaDist.map(t => <MagnitudeBar key={t.label} label={t.label} count={t.count} total={totalLeads} />)}
+          {tipoAltaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con tipo de alta registrado.</div>}
         </Card>
       </div>
 
@@ -633,7 +666,7 @@ export function LeadsPizarra({
               <thead>
                 <tr style={{ background: '#FAFAF9' }}>
                   {COLUMNS.map(c => (
-                    <th key={c.label} style={{ ...thStyleBase, textAlign: 'left' }}>
+                    <th key={c.label} style={{ ...thStyleBase, ...(c.label === 'Expediente' ? dividerStyle : undefined), textAlign: 'left' }}>
                       {c.label}
                     </th>
                   ))}

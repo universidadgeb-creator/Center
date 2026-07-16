@@ -1,4 +1,37 @@
 import { color } from '../lib/tokens';
+import { pctColor, pctLabel } from '../lib/style';
+import { Card, Eyebrow } from './Card';
+
+/** KPI card with a "count de total" line, a % label, and a progress bar underneath — used
+ * everywhere a metric is naturally "X out of Y" (tour rate, close rate, app adoption). */
+export function KpiBarCard({
+  label,
+  count,
+  total,
+  accent,
+}: {
+  label: string;
+  count: number;
+  total: number;
+  /** Left-border + tinted background, for metrics that need to visually stand apart (e.g. a
+   * different scope/denominator than the rest of the row). */
+  accent?: string;
+}) {
+  const pct = total ? Math.round((count / total) * 100) : 0;
+  const barColor = pctColor(count, total);
+  return (
+    <Card style={accent ? { borderLeft: `4px solid ${accent}`, background: `${accent}0D` } : undefined}>
+      <Eyebrow>{label}</Eyebrow>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontSize: 24, fontWeight: 600, color: '#18181B' }}>{count}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: barColor }}>{pctLabel(count, total)} · de {total}</span>
+      </div>
+      <div style={{ height: 6, borderRadius: 999, background: '#EEEBE5', overflow: 'hidden' }}>
+        <div style={{ height: '100%', background: barColor, width: `${pct}%` }} />
+      </div>
+    </Card>
+  );
+}
 
 export interface StackedBarSegment {
   label: string;

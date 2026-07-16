@@ -37,6 +37,15 @@ export function isWonStatus(status: string | null | undefined): boolean {
   return status === '100% Venta';
 }
 
+/** Of the closed statuses, the one true win — everything else closed is a lost sale. */
+export function isPositiveClosed(status: string | null | undefined): boolean {
+  return status === '100% Venta';
+}
+
+export function isNegativeClosed(status: string | null | undefined): boolean {
+  return isClosedStatus(status) && !isPositiveClosed(status);
+}
+
 /**
  * Semantic color per pipeline stage, grouped by what the stage means for the RP's day:
  * gray = not worked yet, blue = in contact, amber = appointment/tour in motion,
@@ -61,6 +70,17 @@ export const LEAD_STATUS_COLORS: Record<string, string> = {
   'Pase invitado Easy Fit': '#4D7C0F',
   'Lead de renovación': '#4D7C0F',
 };
+
+/** The 6 color families above, named — used to group the 16 statuses into a readable donut
+ * (one slice per family) instead of 16 near-invisible slivers. */
+export const STATUS_GROUPS: { label: string; color: string; statuses: string[] }[] = [
+  { label: 'Sin trabajar', color: '#78716C', statuses: ['Nuevo'] },
+  { label: 'En contacto', color: '#1D4ED8', statuses: ['10% Contactado', '20% Contactado con respuesta', 'Llamar después'] },
+  { label: 'Cita / Tour', color: '#B45309', statuses: ['50% Cita', '50% Reprogramar cita', '60% Tour/Precio', '80% Por confirmar'] },
+  { label: 'Ganado', color: '#1E7A42', statuses: ['100% Venta', 'Tiene total pass'] },
+  { label: 'Perdido', color: '#B42318', statuses: ['0% No le interesa', 'Nunca contestó', 'No existe', 'No venta / No interesa'] },
+  { label: 'Especial', color: '#4D7C0F', statuses: ['Pase invitado Easy Fit', 'Lead de renovación'] },
+];
 
 export function leadStatusColor(status: string): string {
   return LEAD_STATUS_COLORS[status] ?? '#78716C';

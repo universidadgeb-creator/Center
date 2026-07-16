@@ -1,39 +1,16 @@
 import { useMemo, useState } from 'react';
-import type { Lead, LeadGoal } from '../lib/types';
+import type { Lead, LeadGoal, Promotion } from '../lib/types';
 import { formatDate, initialsOf, pctColor, pctLabel, checkStyle, pillBtnStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
-import { isClosedStatus, isWonStatus, leadStatusColor, LEAD_STATUSES, LEAD_ESTRATEGIAS } from '../lib/leadStatus';
+import {
+  isClosedStatus, isNegativeClosed, isPositiveClosed, isWonStatus, leadStatusColor,
+  LEAD_STATUSES, LEAD_ESTRATEGIAS, STATUS_GROUPS, TIPO_ALTA_OPTIONS,
+} from '../lib/leadStatus';
 import { Card, Eyebrow, EmptyState } from '../components/Card';
+import { DonutChart, KpiBarCard, MagnitudeBar } from '../components/Chart';
 
 const GENERAL_RP = '';
-
-function KpiCard({ label, count, total, suffix }: { label: string; count: number; total: number; suffix?: string }) {
-  const pct = total ? Math.round((count / total) * 100) : 0;
-  const color = pctColor(count, total);
-  return (
-    <Card>
-      <Eyebrow>{label}</Eyebrow>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <span style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{count}</span>
-        <span style={{ fontSize: 14, fontWeight: 600, color }}>{suffix ?? pctLabel(count, total)}</span>
-      </div>
-      <div style={{ height: 6, borderRadius: 999, background: '#EEEBE5', overflow: 'hidden' }}>
-        <div style={{ height: '100%', background: color, width: `${pct}%` }} />
-      </div>
-    </Card>
-  );
-}
-
-/** Compact label+count+pct row with a colored identity dot — mirrors Concentrado's DistributionRow. */
-function DistributionRow({ label, count, total, color }: { label: string; count: number; total: number; color: string }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 999, background: color, flex: 'none' }} />
-      <span style={{ color: '#6E6A64', flex: 1 }}>{label}</span>
-      <span style={{ fontWeight: 600, color: '#2B2926' }}>{count} · {pctLabel(count, total)}</span>
-    </div>
-  );
-}
+const WON_ONLY_ACCENT = '#7C3AED';
 
 function MetaRow({ label, meta, real, onSaveMeta }: { label: string; meta: number; real: number; onSaveMeta: (value: number) => void }) {
   return (
@@ -66,10 +43,12 @@ export function LeadsSeguimientoRp({
   leads,
   goals,
   setGoal,
+  promotions,
 }: {
   leads: Lead[];
   goals: LeadGoal[];
   setGoal: (month: string, rp: string, meta_altas: number) => void;
+  promotions: Promotion[];
 }) {
   const months = useMemo(() => {
     const set = new Set<string>();
@@ -102,11 +81,15 @@ export function LeadsSeguimientoRp({
   const total = scopedRpLeads.length;
   const tour = scopedRpLeads.filter(l => l.tour).length;
   const won = scopedRpLeads.filter(l => isWonStatus(l.status)).length;
-  const expedienteCompleto = scopedRpLeads.filter(l => l.member_id).length;
-  const conApp = scopedRpLeads.filter(l => l.app_downloaded || l.member_id).length;
-  const conEncuesta = scopedRpLeads.filter(l => l.member_id).length;
 
+  // Expediente/encuesta/APP only ever apply once a lead has actually closed as a sale — see
+  // the same note in Concentrado de Leads (LeadsPizarra.tsx).
   const wonLeads = scopedRpLeads.filter(l => isWonStatus(l.status));
+  const expedienteCompleto = wonLeads.filter(l => l.member_id).length;
+  const conApp = wonLeads.filter(l => l.app_downloaded || l.member_id).length;
+  const conEncuesta = wonLeads.filter(l => l.member_id).length;
+  const pendientesAppCount = wonLeads.length - conApp;
+
   const montoTotal = wonLeads.reduce((sum, l) => sum + (l.monto_con_iva ?? 0), 0);
   const ticketPromedio = wonLeads.length ? montoTotal / wonLeads.length : 0;
   const diasCierre = wonLeads
@@ -115,13 +98,37 @@ export function LeadsSeguimientoRp({
     .filter(d => Number.isFinite(d) && d >= 0);
   const promedioDiasCierre = diasCierre.length ? diasCierre.reduce((a, b) => a + b, 0) / diasCierre.length : null;
 
+  const enProcesoCount = scopedRpLeads.filter(l => !isClosedStatus(l.status)).length;
+  const pendientesNuevoCount = scopedRpLeads.filter(l => l.status === 'Nuevo').length;
+  const pendientesSeguimientoCount = scopedRpLeads.filter(l => !isClosedStatus(l.status) && l.status !== 'Nuevo').length;
+  const cerradosCount = scopedRpLeads.filter(l => isClosedStatus(l.status)).length;
+  const cerradosPositivos = scopedRpLeads.filter(l => isPositiveClosed(l.status)).length;
+  const cerradosNegativos = scopedRpLeads.filter(l => isNegativeClosed(l.status)).length;
+
   const statusDist = LEAD_STATUSES
     .map(s => ({ label: s, count: scopedRpLeads.filter(l => l.status === s).length, color: leadStatusColor(s) }))
-    .filter(s => s.count > 0);
+    .filter(s => s.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const statusGroupDist = STATUS_GROUPS
+    .map(g => ({ label: g.label, color: g.color, count: scopedRpLeads.filter(l => g.statuses.includes(l.status)).length }))
+    .filter(g => g.count > 0)
+    .sort((a, b) => b.count - a.count);
 
   const estrategiaDist = LEAD_ESTRATEGIAS
     .map(e => ({ label: e, count: scopedRpLeads.filter(l => l.estrategia === e).length }))
-    .filter(e => e.count > 0);
+    .filter(e => e.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const promocionDist = promotions
+    .map(p => ({ label: p.label, color: p.color, count: scopedRpLeads.filter(l => l.promocion === p.label).length }))
+    .filter(p => p.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const tipoAltaDist = TIPO_ALTA_OPTIONS
+    .map(t => ({ label: t, count: scopedRpLeads.filter(l => l.tipo_alta === t).length }))
+    .filter(t => t.count > 0)
+    .sort((a, b) => b.count - a.count);
 
   const goalsByRp = useMemo(() => {
     const map = new Map<string, number>();
@@ -221,11 +228,24 @@ export function LeadsSeguimientoRp({
           <Eyebrow>Leads totales</Eyebrow>
           <div style={{ fontSize: 26, fontWeight: 600, color: '#18181B' }}>{total}</div>
         </Card>
-        <KpiCard label="% Lead → Tour" count={tour} total={total} />
-        <KpiCard label="% Tour → Alta" count={won} total={tour} />
-        <KpiCard label="Expedientes completos" count={expedienteCompleto} total={total} suffix={`de ${total}`} />
-        <KpiCard label="Con APP" count={conApp} total={total} suffix={`de ${total}`} />
-        <KpiCard label="Con encuesta" count={conEncuesta} total={total} suffix={`de ${total}`} />
+        <KpiBarCard label="Lead → Tour (todos)" count={tour} total={total} />
+        <KpiBarCard label="Tour → Alta" count={won} total={tour} />
+        <KpiBarCard label="Expedientes completos" count={expedienteCompleto} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
+        <KpiBarCard label="Con APP" count={conApp} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
+        <KpiBarCard label="Con encuesta" count={conEncuesta} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6E6A64', marginTop: -8 }}>
+        <span style={{ width: 10, height: 10, borderRadius: 3, background: WON_ONLY_ACCENT, flex: 'none' }} />
+        Expedientes, APP y encuesta solo aplican a leads con venta cerrada (100% Venta) — no a todo el embudo.
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+        <KpiBarCard label="En proceso" count={enProcesoCount} total={total} />
+        <KpiBarCard label="Pendientes (Nuevo)" count={pendientesNuevoCount} total={total} />
+        <KpiBarCard label="Pendientes seguimiento" count={pendientesSeguimientoCount} total={total} />
+        <KpiBarCard label="Cerrados positivos" count={cerradosPositivos} total={cerradosCount} />
+        <KpiBarCard label="Cerrados negativos" count={cerradosNegativos} total={cerradosCount} />
+        <KpiBarCard label="Pendientes APP" count={pendientesAppCount} total={wonLeads.length} accent={WON_ONLY_ACCENT} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
@@ -244,16 +264,39 @@ export function LeadsSeguimientoRp({
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-        <Card gap={10}>
-          <Eyebrow>Distribución por status</Eyebrow>
-          {statusDist.map(s => <DistributionRow key={s.label} label={s.label} count={s.count} total={total} color={s.color} />)}
-          {statusDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>}
+        <Card gap={12}>
+          <Eyebrow>Resumen de status (agrupado)</Eyebrow>
+          {statusGroupDist.length > 0 ? (
+            <DonutChart slices={statusGroupDist.map(g => ({ label: g.label, count: g.count, color: g.color }))} />
+          ) : (
+            <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>
+          )}
         </Card>
 
         <Card gap={10}>
+          <Eyebrow>Distribución por status (detalle)</Eyebrow>
+          {statusDist.map(s => <MagnitudeBar key={s.label} label={s.label} count={s.count} total={total} hue={s.color} />)}
+          {statusDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads en este periodo.</div>}
+        </Card>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+        <Card gap={10}>
           <Eyebrow>Distribución por estrategia</Eyebrow>
-          {estrategiaDist.map(e => <DistributionRow key={e.label} label={e.label} count={e.count} total={total} color="#57534E" />)}
+          {estrategiaDist.map(e => <MagnitudeBar key={e.label} label={e.label} count={e.count} total={total} />)}
           {estrategiaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con estrategia registrada.</div>}
+        </Card>
+
+        <Card gap={10}>
+          <Eyebrow>Distribución por promoción</Eyebrow>
+          {promocionDist.map(p => <MagnitudeBar key={p.label} label={p.label} count={p.count} total={total} hue={p.color} />)}
+          {promocionDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con promoción registrada.</div>}
+        </Card>
+
+        <Card gap={10}>
+          <Eyebrow>Distribución por tipo de alta</Eyebrow>
+          {tipoAltaDist.map(t => <MagnitudeBar key={t.label} label={t.label} count={t.count} total={total} />)}
+          {tipoAltaDist.length === 0 && <div style={{ fontSize: 12, color: '#ACA79E' }}>Sin leads con tipo de alta registrado.</div>}
         </Card>
       </div>
 
