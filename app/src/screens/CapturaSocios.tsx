@@ -73,15 +73,21 @@ export function CapturaSocios({
   /** Every socio in Concentrado de Socios exists because they answered the encuesta — so the
    * encuesta count is simply the socio count, not the (still barely populated) lead↔socio link. */
   const totalEncuestas = members.length;
-  const leadsVinculados = useMemo(() => wonLeads.filter(l => !!l.member_id).length, [wonLeads]);
 
   /** Once a lead links to a member, it drops out of unlinkedWonLeads — so the row's <select>
    * loses that <option> and the browser falls back to the placeholder, on refresh (React
    * reconciles the option list right away). That reads as "it didn't save" even though it did.
-   * This map lets the row show a persistent "✓ Vinculado" instead of a select that resets itself. */
-  const linkedLeadByMember = useMemo(() => {
-    const map = new Map<string, Lead>();
-    for (const l of leads) if (l.member_id) map.set(l.member_id, l);
+   * This map lets the row show a persistent "✓ Vinculado" instead of a select that resets itself.
+   * Kept as a list, not a single lead: nothing stops two lead rows (e.g. a duplicate capture)
+   * from pointing at the same socio, and hiding the second one would make it uncorrectable. */
+  const linkedLeadsByMember = useMemo(() => {
+    const map = new Map<string, Lead[]>();
+    for (const l of leads) {
+      if (!l.member_id) continue;
+      const bucket = map.get(l.member_id);
+      if (bucket) bucket.push(l);
+      else map.set(l.member_id, [l]);
+    }
     return map;
   }, [leads]);
 
@@ -136,6 +142,12 @@ export function CapturaSocios({
     if (Object.keys(patch).length > 0) updateMember(memberId, patch);
   };
 
+  /** Escape hatch for a bad link (wrong lead picked, or a duplicate lead row claimed the same
+   * socio twice) — the socio row otherwise has no way back once linked. */
+  const unlinkLead = (leadId: string) => {
+    updateLead(leadId, { member_id: null });
+  };
+
   return (
     <>
       <datalist id="captura-socios-rp-suggestions">
@@ -160,18 +172,12 @@ export function CapturaSocios({
               hue="#1E7A42"
               title="Socios registrados en el Concentrado de Socios — cada uno existe porque contestó la encuesta. Comparado contra los leads cerrados."
             />
-            <MagnitudeBar
-              label="Leads vinculados"
-              count={leadsVinculados}
-              total={wonLeads.length}
-              hue="#1D4ED8"
-              title="Leads cerrados que ya quedaron vinculados con su socio/encuesta desde este portal."
-            />
           </Card>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
             <MissingKpiCard label="Falta no. socio" missing={faltaNoSocio} total={members.length} />
             <MissingKpiCard label="Falta RP" missing={faltaRp} total={members.length} />
             <MissingKpiCard label="Falta ejecutivo" missing={faltaEjecutivo} total={members.length} />
+            <MissingKpiCard label="Falta vinculado" missing={unlinkedWonLeads.length} total={wonLeads.length} />
           </div>
         </div>
       </div>
@@ -187,20 +193,25 @@ export function CapturaSocios({
           { key: 'no-socio', label: 'Falta no socio', filter: m => !m.member_no, emptyMessage: 'Todos los socios tienen número de socio asignado.' },
           { key: 'rp', label: 'Falta RP', filter: m => !m.rp, emptyMessage: 'Todos los socios tienen RP asignado.' },
           { key: 'ejecutivo', label: 'Falta Ejecutivo', filter: m => !m.ejecutivo, emptyMessage: 'Todos los socios tienen ejecutivo asignado.' },
+          { key: 'vinculado', label: 'Falta vinculado', filter: m => !linkedLeadsByMember.has(m.id), emptyMessage: 'Todos los socios ya están vinculados a su lead.' },
         ]}
         collapsible
         renderRow={m => {
-          const linkedLead = linkedLeadByMember.get(m.id);
+          const linkedLeads = linkedLeadsByMember.get(m.id) ?? [];
           const key = phoneKey(m.phone);
-          const suggested = !linkedLead && key ? leadsByPhone.get(key) ?? [] : [];
+          const suggested = linkedLeads.length === 0 && key ? leadsByPhone.get(key) ?? [] : [];
           return (
           <div key={m.id} style={captureRowStyle()}>
             <div style={{ flex: '2 1 200px', minWidth: 180 }}>
               <div style={{ fontWeight: 600, color: '#2B2926' }}>{m.name}</div>
               <div style={{ fontSize: 12, color: '#8B877F' }}>Alta: {formatDate(m.alta_date)}</div>
-              {linkedLead ? (
+              {linkedLeads.length > 1 ? (
+                <div style={{ fontSize: 11, fontWeight: 600, color: MISSING_ACCENT, marginTop: 2 }}>
+                  ⚠ Vinculado a {linkedLeads.length} leads: {linkedLeads.map(l => l.nombre).join(' · ')}
+                </div>
+              ) : linkedLeads.length === 1 ? (
                 <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
-                  ✓ Vinculado con lead: {linkedLead.nombre}
+                  ✓ Vinculado con lead: {linkedLeads[0].nombre}
                 </div>
               ) : suggested.length > 0 && (
                 <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
@@ -231,11 +242,24 @@ export function CapturaSocios({
               onBlur={e => { if (e.target.value !== (m.ejecutivo ?? '')) updateMember(m.id, { ejecutivo: e.target.value || null }); }}
               style={captureInputStyle()}
             />
-            {linkedLead ? (
+            {linkedLeads.length > 0 ? (
               // Static on purpose — once linked, the lead drops out of the <select>'s own option
               // list, so a select here would silently reset to the placeholder and look unsaved.
-              <div style={{ ...captureInputStyle(), display: 'flex', alignItems: 'center', background: '#EFFAF1', border: '1px solid #B7E4C7', color: SUGGEST_HUE, fontWeight: 600 }}>
-                ✓ Vinculado
+              // "Desvincular" is the escape hatch for a wrong pick or a duplicate lead row — each
+              // linked lead gets its own, since a socio can end up with more than one.
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 160 }}>
+                {linkedLeads.map(l => (
+                  <div key={l.id} style={{ ...captureInputStyle(), padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#EFFAF1', border: '1px solid #B7E4C7', color: SUGGEST_HUE, fontWeight: 600, fontSize: 12 }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>✓ {l.nombre}</span>
+                    <button
+                      onClick={() => unlinkLead(l.id)}
+                      title={`Desvincular de "${l.nombre}"`}
+                      style={{ background: 'none', border: 'none', color: SUGGEST_HUE, fontSize: 11, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', fontFamily: 'inherit', padding: 0, flex: 'none' }}
+                    >
+                      Desvincular
+                    </button>
+                  </div>
+                ))}
               </div>
             ) : (
               <select
