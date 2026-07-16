@@ -5,10 +5,7 @@ type Portal = 'leads' | 'socios' | 'admin' | 'deportes';
 
 const PORTAL_OF: Partial<Record<Screen, Portal>> = {
   leadsPizarra: 'leads',
-  leadsSeguimientoRp: 'leads',
   lider: 'socios',
-  rpdash: 'socios',
-  perfil: 'socios',
   capturaSocios: 'admin',
   capturaSportlab: 'deportes',
 };
@@ -21,15 +18,8 @@ const PORTAL_LABEL: Record<Portal, string> = {
 };
 
 const PORTAL_TABS: Record<Portal, { screen: Screen; label: string }[]> = {
-  leads: [
-    { screen: 'leadsPizarra', label: 'Concentrado' },
-    { screen: 'leadsSeguimientoRp', label: 'Seguimiento por RP' },
-  ],
-  socios: [
-    { screen: 'lider', label: 'Concentrado' },
-    { screen: 'rpdash', label: 'Seguimiento por Ejecutivo' },
-    { screen: 'perfil', label: 'Vista Socio' },
-  ],
+  leads: [],
+  socios: [],
   admin: [
     { screen: 'capturaSocios', label: 'Captura Socios' },
   ],
@@ -66,7 +56,7 @@ export function TopNav({ screen, onChange }: { screen: Screen; onChange: (s: Scr
         <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.03em', color: '#18181B' }}>VIVO47</span>
         <span style={{ fontSize: 13, color: '#8B877F' }}>{portal ? PORTAL_LABEL[portal] : 'Portal operativo'}</span>
       </div>
-      {portal && (
+      {portal && PORTAL_TABS[portal].length > 1 && (
         <div style={{ display: 'flex', gap: 4, background: '#F4F2ED', padding: 4, borderRadius: 9, flexWrap: 'wrap' }}>
           {PORTAL_TABS[portal].map(tab => (
             <button key={tab.screen} style={tabBtnStyle(screen === tab.screen)} onClick={() => onChange(tab.screen)}>

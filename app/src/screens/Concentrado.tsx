@@ -1,22 +1,28 @@
 import { useMemo, useState } from 'react';
 import type { Member } from '../lib/types';
-import { checkStyle, formatDate, pctColor, pctLabel, pillBtnStyle, riskBadgeStyle, riskCategoryColors, riskLabel, sortHeaderStyle } from '../lib/style';
+import { checkStyle, formatDate, initialsOf, pctColor, pctLabel, pillBtnStyle, riskBadgeStyle, riskCategoryColors, riskLabel, sortHeaderStyle } from '../lib/style';
 import { formatMonthLabel, monthKey } from '../lib/date';
 import { Card, Eyebrow } from '../components/Card';
 import { StackedBar, MagnitudeBar, DonutChart } from '../components/Chart';
+import { Drawer } from '../components/Drawer';
+import { SocioProfile } from '../components/SocioProfile';
 
 /** Validated 4-color categorical palette for the top-4 J/K/L answer slices; "Otros" always
  * uses the neutral muted gray already used elsewhere on this screen. */
 const JKL_COLORS = ['#1D4ED8', '#C4791A', '#15803D', '#9D174D'];
 
-type SortKey = 'name' | 'rp' | 'ejecutivo' | 'app' | 'sportlab' | 'keepgoing' | 'performanceDay' | 'risk' | 'altaDate' | 'estado';
+type SortKey = 'altaDate' | 'name' | 'telefono' | 'rp' | 'ejecutivo' | 'app' | 'sportlab' | 'keepgoing' | 'performanceDay' | 'risk' | 'estado';
 type SortDir = 'asc' | 'desc';
 type QuickFilter = 'ninguno' | 'riesgoalto' | 'sinkeepgoing' | 'sinapp' | 'sinsportlab' | 'sinperformanceday';
 
 const RISK_ORDER: Record<string, number> = { Alto: 0, Medio: 1, Bajo: 2 };
 
+/** Same first-3-column order as Concentrado de Leads (Fecha, Nombre, Teléfono), so the two
+ * tables read consistently. */
 const COLUMNS: { key: SortKey; label: string; align: 'left' | 'center' }[] = [
-  { key: 'name', label: 'Socio', align: 'left' },
+  { key: 'altaDate', label: 'Fecha', align: 'left' },
+  { key: 'name', label: 'Nombre', align: 'left' },
+  { key: 'telefono', label: 'Teléfono', align: 'left' },
   { key: 'rp', label: 'RP asignado', align: 'left' },
   { key: 'ejecutivo', label: 'Ejecutivo', align: 'left' },
   { key: 'app', label: 'APP', align: 'center' },
@@ -25,7 +31,6 @@ const COLUMNS: { key: SortKey; label: string; align: 'left' | 'center' }[] = [
   { key: 'performanceDay', label: 'Performance Day', align: 'center' },
   { key: 'risk', label: 'Riesgo', align: 'left' },
   { key: 'estado', label: 'Estado', align: 'center' },
-  { key: 'altaDate', label: 'Fecha de alta', align: 'left' },
 ];
 
 function normalizeGender(g: string | null): 'Hombre' | 'Mujer' | null {
@@ -71,6 +76,7 @@ function sortMembers(rows: Member[], key: SortKey, dir: SortDir): Member[] {
   const sorted = [...rows].sort((a, b) => {
     let cmp = 0;
     if (key === 'name') cmp = a.name.localeCompare(b.name);
+    else if (key === 'telefono') cmp = (a.phone || '').localeCompare(b.phone || '');
     else if (key === 'rp') cmp = (a.rp || '').localeCompare(b.rp || '');
     else if (key === 'ejecutivo') cmp = (a.ejecutivo || '').localeCompare(b.ejecutivo || '');
     else if (key === 'app') cmp = (b.app_downloaded ? 1 : 0) - (a.app_downloaded ? 1 : 0);
@@ -97,10 +103,8 @@ function IndicatorCard({ title, children }: { title: string; children: React.Rea
 
 export function Concentrado({
   members,
-  onViewProfile,
 }: {
   members: Member[];
-  onViewProfile: (id: string) => void;
 }) {
   const months = useMemo(() => {
     const set = new Set<string>();
@@ -113,10 +117,26 @@ export function Concentrado({
 
   const [selectedMonth, setSelectedMonth] = useState<'todos' | string>('todos');
 
-  const scoped = useMemo(() => {
+  const ejecutivos = useMemo(
+    () => Array.from(new Set(members.map(m => m.ejecutivo).filter((e): e is string => !!e))).sort(),
+    [members]
+  );
+  const [selectedEjecutivo, setSelectedEjecutivo] = useState('todos');
+  const isGeneral = selectedEjecutivo === 'todos';
+
+  // Month-only scope — feeds `reps`/`ejecutivos` option lists and the month selector; the
+  // ejecutivo selector narrows further into `scoped` below.
+  const monthScoped = useMemo(() => {
     if (selectedMonth === 'todos') return members;
     return members.filter(m => monthKey(m.alta_date) === selectedMonth);
   }, [members, selectedMonth]);
+
+  // Month + ejecutivo scope — feeds every indicator card and the table, so switching the
+  // ejecutivo selector re-scopes the whole dashboard instead of only filtering the table.
+  const scoped = useMemo(() => {
+    if (isGeneral) return monthScoped;
+    return monthScoped.filter(m => m.ejecutivo === selectedEjecutivo);
+  }, [monthScoped, isGeneral, selectedEjecutivo]);
 
   const reps = useMemo(
     () => Array.from(new Set(scoped.map(m => m.rp).filter((r): r is string => !!r))).sort(),
@@ -128,6 +148,7 @@ export function Concentrado({
   const [quickFilter, setQuickFilter] = useState<QuickFilter>('ninguno');
   const [sortKey, setSortKey] = useState<SortKey>('risk');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [detailMemberId, setDetailMemberId] = useState<string | null>(null);
 
   const totalAll = scoped.length;
   const kpiG = (count: number) => ({ count, pctLabel: pctLabel(count, totalAll), color: pctColor(count, totalAll) });
@@ -188,6 +209,7 @@ export function Concentrado({
   };
 
   const scopeLabel = selectedMonth === 'todos' ? 'General · todos los meses' : formatMonthLabel(selectedMonth);
+  const detailMember = detailMemberId ? members.find(m => m.id === detailMemberId) : undefined;
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', padding: 32, display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -203,6 +225,16 @@ export function Concentrado({
             <div style={{ fontSize: 12, color: '#8B877F' }}>socios activos</div>
           </div>
           <select
+            value={selectedEjecutivo}
+            onChange={e => setSelectedEjecutivo(e.target.value)}
+            style={{ border: '1px solid #E4E1DC', borderRadius: 8, padding: '9px 12px', fontSize: 13, fontFamily: 'inherit', color: '#2B2926', background: '#fff' }}
+          >
+            <option value="todos">General (todos los ejecutivos)</option>
+            {ejecutivos.map(e => (
+              <option key={e} value={e}>{e}</option>
+            ))}
+          </select>
+          <select
             value={selectedMonth}
             onChange={e => setSelectedMonth(e.target.value)}
             style={{ border: '1px solid #E4E1DC', borderRadius: 8, padding: '9px 12px', fontSize: 13, fontFamily: 'inherit', color: '#2B2926', background: '#fff' }}
@@ -214,6 +246,18 @@ export function Concentrado({
           </select>
         </div>
       </div>
+
+      {!isGeneral && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 999, background: '#B9FF66', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#191A23', flex: 'none' }}>
+            {initialsOf(selectedEjecutivo)}
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#18181B' }}>{selectedEjecutivo}</div>
+            <div style={{ fontSize: 13, color: '#8B877F' }}>{totalAll} socios asignados{selectedMonth !== 'todos' ? ` · ${formatMonthLabel(selectedMonth)}` : ''}</div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 1.4fr) repeat(3, minmax(150px, 1fr))', gridAutoRows: 'auto', gap: 16 }}>
         <Card gap={10} style={{ gridColumn: '1', gridRow: '1 / span 2' }}>
@@ -356,12 +400,14 @@ export function Concentrado({
             <tbody>
               {filtered.map(m => (
                 <tr key={m.id} style={{ borderBottom: '1px solid #EEEBE5' }}>
+                  <td style={{ padding: '14px 20px', color: '#4A4640' }}>{formatDate(m.alta_date)}</td>
                   <td style={{ padding: '14px 20px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      <span style={{ fontWeight: 600, color: '#2B2926', cursor: 'pointer' }} onClick={() => onViewProfile(m.id)}>{m.name}</span>
+                      <span style={{ fontWeight: 600, color: '#2B2926', cursor: 'pointer' }} onClick={() => setDetailMemberId(m.id)}>{m.name}</span>
                       <span style={{ fontSize: 12, color: '#8B877F' }}>{m.member_no || 'Sin no. de socio'}</span>
                     </div>
                   </td>
+                  <td style={{ padding: '14px 20px', color: '#4A4640' }}>{m.phone || '—'}</td>
                   <td style={{ padding: '14px 20px', color: '#4A4640' }}>{m.rp || 'Sin asignar'}</td>
                   <td style={{ padding: '14px 20px', color: '#4A4640' }}>{m.ejecutivo || 'Sin asignar'}</td>
                   <td style={{ padding: '14px 20px', textAlign: 'center' }}>
@@ -388,7 +434,6 @@ export function Concentrado({
                       {m.member_no ? 'Revisado' : 'Pendiente'}
                     </span>
                   </td>
-                  <td style={{ padding: '14px 20px', color: '#4A4640' }}>{formatDate(m.alta_date)}</td>
                 </tr>
               ))}
             </tbody>
@@ -398,6 +443,18 @@ export function Concentrado({
           <span>Mostrando {filtered.length} de {totalAll} socios</span>
         </div>
       </div>
+
+      {detailMember && (
+        <Drawer
+          open
+          title={detailMember.name}
+          subtitle={detailMember.member_no ? `Socio ${detailMember.member_no}` : 'Sin no. de socio'}
+          onClose={() => setDetailMemberId(null)}
+          width={560}
+        >
+          <SocioProfile member={detailMember} />
+        </Drawer>
+      )}
 
     </div>
   );

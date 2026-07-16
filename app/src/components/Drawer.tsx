@@ -2,12 +2,12 @@ import type { ReactNode } from 'react';
 
 /** Generic right-side slide-over — used for a row's full detail, without reordering the table
  * behind it (an inline-expanding row would push every row below it down instead). */
-export function Drawer({ open, onClose, title, subtitle, children }: { open: boolean; onClose: () => void; title: string; subtitle?: string; children: ReactNode }) {
+export function Drawer({ open, onClose, title, subtitle, children, width = 440 }: { open: boolean; onClose: () => void; title: string; subtitle?: string; children: ReactNode; width?: number }) {
   if (!open) return null;
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 40, display: 'flex', justifyContent: 'flex-end' }}>
       <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(24,24,27,0.32)' }} />
-      <div style={{ position: 'relative', width: 440, maxWidth: '92vw', height: '100%', background: '#FFFFFF', boxShadow: '-12px 0 32px rgba(0,0,0,0.16)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ position: 'relative', width, maxWidth: '92vw', height: '100%', background: '#FFFFFF', boxShadow: '-12px 0 32px rgba(0,0,0,0.16)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '18px 22px', borderBottom: '1px solid #E4E1DC', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div>
             <div style={{ fontSize: 16, fontWeight: 600, color: '#18181B' }}>{title}</div>
