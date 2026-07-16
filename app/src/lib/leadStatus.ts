@@ -78,8 +78,12 @@ export const STATUS_GROUPS: { label: string; color: string; statuses: string[] }
   { label: 'Sin trabajar', color: '#78716C', statuses: ['Nuevo'] },
   { label: 'En contacto', color: '#1D4ED8', statuses: ['10% Contactado', '20% Contactado con respuesta', 'Llamar después'] },
   { label: 'Cita / Tour', color: '#B45309', statuses: ['50% Cita', '50% Reprogramar cita', '60% Tour/Precio', '80% Por confirmar'] },
-  { label: 'Ganado', color: '#1E7A42', statuses: ['100% Venta', 'Tiene total pass'] },
-  { label: 'Perdido', color: '#B42318', statuses: ['0% No le interesa', 'Nunca contestó', 'No existe', 'No venta / No interesa'] },
+  { label: 'Ganado', color: '#1E7A42', statuses: ['100% Venta'] },
+  /* "Tiene total pass" ya tenía un pase vigente por otro lado — no es una venta nueva, así que
+   * isPositiveClosed lo excluye y el resto de la app (buckets, filtros) ya lo cuenta como
+   * cerrado sin venta. Antes vivía en "Ganado" y la dona lo mostraba como inscripción junto con
+   * las ventas reales, aunque en el resto del portal contaba distinto. */
+  { label: 'Perdido', color: '#B42318', statuses: ['0% No le interesa', 'Nunca contestó', 'No existe', 'No venta / No interesa', 'Tiene total pass'] },
   { label: 'Especial', color: '#4D7C0F', statuses: ['Pase invitado Easy Fit', 'Lead de renovación'] },
 ];
 

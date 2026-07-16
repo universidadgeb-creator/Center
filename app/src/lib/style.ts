@@ -178,6 +178,22 @@ export function coloredPillBtnStyle(active: boolean, hue: string): CSSProperties
   };
 }
 
+/** Neutral secondary button used to fold a long section away ("Ocultar"/"Mostrar") — stays
+ * quiet so it never competes with the capture controls inside the section. */
+export function collapseBtnStyle(): CSSProperties {
+  return {
+    background: 'none',
+    border: '1px solid #D9D5CE',
+    padding: '8px 14px',
+    borderRadius: 8,
+    fontSize: 13,
+    color: '#2B2926',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    whiteSpace: 'nowrap',
+  };
+}
+
 export function primaryButtonStyle(disabled = false): CSSProperties {
   return {
     background: tokenColor.accent,

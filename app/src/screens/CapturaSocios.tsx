@@ -1,12 +1,24 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Lead, LeadPatch, Member, MemberPatch } from '../lib/types';
-import { captureInputStyle, captureRowStyle, formatDate, pctColor } from '../lib/style';
+import { captureInputStyle, captureRowStyle, collapseBtnStyle, formatDate, pctColor } from '../lib/style';
 import { isPositiveClosed } from '../lib/leadStatus';
 import { RoleQueue } from '../components/RoleQueue';
 import { Card, EmptyState, Eyebrow } from '../components/Card';
 import { MagnitudeBar } from '../components/Chart';
 
 const MISSING_ACCENT = '#B42318';
+const SUGGEST_HUE = '#1E7A42';
+
+/**
+ * Socio phones come from the Google Form intake and lead phones from the RP's tracker, so the
+ * same number shows up as "33 1234 5678", "+52 33 1234 5678", "013312345678"… Comparing the
+ * last 10 digits ignores lada/country-code/format noise. Anything shorter is too weak to match
+ * on, so it yields no suggestion rather than a wrong one.
+ */
+function phoneKey(raw: string | null): string | null {
+  const digits = (raw ?? '').replace(/\D/g, '');
+  return digits.length >= 10 ? digits.slice(-10) : null;
+}
 
 /** Like KpiBarCard, but colored by how many are *filled in* (count/total inverted) — a high
  * "falta X" count should read as a warning, not tierColor's usual "high % is good" green. */
@@ -63,11 +75,42 @@ export function CapturaSocios({
   const totalEncuestas = members.length;
   const leadsVinculados = useMemo(() => wonLeads.filter(l => !!l.member_id).length, [wonLeads]);
 
-  /** Socios not yet claimed by any lead — the candidates when linking from the lead side. */
+  /** Unlinked won leads indexed by phone, so each socio row can surface its likely lead. A key
+   * can hold several leads (duplicate captures of the same prospect), so this stays a list —
+   * the suggestion is shown for confirmation, never auto-applied. */
+  const leadsByPhone = useMemo(() => {
+    const map = new Map<string, Lead[]>();
+    for (const l of unlinkedWonLeads) {
+      const key = phoneKey(l.telefono);
+      if (!key) continue;
+      const bucket = map.get(key);
+      if (bucket) bucket.push(l);
+      else map.set(key, [l]);
+    }
+    return map;
+  }, [unlinkedWonLeads]);
+
+  /** Socios not yet claimed by any lead — the other half of the phone match, surfaced on the
+   * "sin encuesta" table below. That table is read-only on purpose (see its comment), so this
+   * is a suggestion to go act on from the socio row above, never a link control of its own. */
   const unlinkedMembers = useMemo(() => {
     const taken = new Set(leads.map(l => l.member_id).filter((id): id is string => !!id));
-    return members.filter(m => !taken.has(m.id)).sort((a, b) => a.name.localeCompare(b.name));
+    return members.filter(m => !taken.has(m.id));
   }, [leads, members]);
+
+  const membersByPhone = useMemo(() => {
+    const map = new Map<string, Member[]>();
+    for (const m of unlinkedMembers) {
+      const key = phoneKey(m.phone);
+      if (!key) continue;
+      const bucket = map.get(key);
+      if (bucket) bucket.push(m);
+      else map.set(key, [m]);
+    }
+    return map;
+  }, [unlinkedMembers]);
+
+  const [showSinEncuesta, setShowSinEncuesta] = useState(true);
 
   const faltaNoSocio = useMemo(() => members.filter(m => !m.member_no).length, [members]);
   const faltaRp = useMemo(() => members.filter(m => !m.rp).length, [members]);
@@ -132,11 +175,20 @@ export function CapturaSocios({
           { key: 'rp', label: 'Falta RP', filter: m => !m.rp, emptyMessage: 'Todos los socios tienen RP asignado.' },
           { key: 'ejecutivo', label: 'Falta Ejecutivo', filter: m => !m.ejecutivo, emptyMessage: 'Todos los socios tienen ejecutivo asignado.' },
         ]}
-        renderRow={m => (
+        collapsible
+        renderRow={m => {
+          const key = phoneKey(m.phone);
+          const suggested = key ? leadsByPhone.get(key) ?? [] : [];
+          return (
           <div key={m.id} style={captureRowStyle()}>
             <div style={{ flex: '2 1 200px', minWidth: 180 }}>
               <div style={{ fontWeight: 600, color: '#2B2926' }}>{m.name}</div>
               <div style={{ fontSize: 12, color: '#8B877F' }}>Alta: {formatDate(m.alta_date)}</div>
+              {suggested.length > 0 && (
+                <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
+                  ★ Mismo teléfono: {suggested.map(s => s.nombre).join(' · ')}
+                </div>
+              )}
             </div>
             <input
               type="text"
@@ -164,49 +216,67 @@ export function CapturaSocios({
             <select
               defaultValue=""
               onChange={e => { if (e.target.value) linkLead(m.id, e.target.value); }}
-              style={captureInputStyle()}
+              style={{ ...captureInputStyle(), ...(suggested.length > 0 ? { borderColor: SUGGEST_HUE } : undefined) }}
             >
               <option value="">Vincular con lead ganado…</option>
-              {unlinkedWonLeads.map(l => (
-                <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
-              ))}
+              {suggested.length > 0 && (
+                <optgroup label="Mismo teléfono">
+                  {suggested.map(l => (
+                    <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="Todos los leads ganados">
+                {unlinkedWonLeads.map(l => (
+                  <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
+                ))}
+              </optgroup>
             </select>
           </div>
-        )}
+          );
+        }}
       />
 
+      {/* Read-only on purpose: vincular siempre se hace desde la fila del socio (arriba), donde
+          está la sugerencia por teléfono. Esta tabla solo expone quién falta. */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 32px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 600, color: '#18181B' }}>Leads cerrados sin encuesta</div>
-          <div style={{ fontSize: 13, color: '#8B877F', marginTop: 4 }}>
-            Ventas cerradas que aún no están vinculadas a un socio del Concentrado. O no contestaron la encuesta, o su socio ya existe y falta vincularlo aquí.
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 600, color: '#18181B' }}>Leads cerrados sin encuesta</div>
+            <div style={{ fontSize: 13, color: '#8B877F', marginTop: 4 }}>
+              Ventas cerradas que aún no están vinculadas a un socio del Concentrado. O no contestaron la encuesta, o su socio ya existe y falta vincularlo desde la captura de arriba.
+            </div>
           </div>
+          <button style={collapseBtnStyle()} onClick={() => setShowSinEncuesta(v => !v)}>
+            {showSinEncuesta ? 'Ocultar' : `Mostrar (${unlinkedWonLeads.length})`}
+          </button>
         </div>
 
-        {unlinkedWonLeads.length === 0 ? (
-          <EmptyState>Todos los leads cerrados están vinculados a su encuesta.</EmptyState>
-        ) : (
-          unlinkedWonLeads.map(l => (
-            <div key={l.id} style={captureRowStyle()}>
-              <div style={{ flex: '2 1 200px', minWidth: 180 }}>
-                <div style={{ fontWeight: 600, color: '#2B2926' }}>{l.nombre}</div>
-                <div style={{ fontSize: 12, color: '#8B877F' }}>
-                  {l.rp || 'Sin RP'} · Cierre: {formatDate(l.fecha_cierre)}
+        {showSinEncuesta && (
+          unlinkedWonLeads.length === 0 ? (
+            <EmptyState>Todos los leads cerrados están vinculados a su encuesta.</EmptyState>
+          ) : (
+            unlinkedWonLeads.map(l => {
+              const key = phoneKey(l.telefono);
+              const suggested = key ? membersByPhone.get(key) ?? [] : [];
+              return (
+                <div key={l.id} style={captureRowStyle()}>
+                  <div style={{ flex: '2 1 200px', minWidth: 180 }}>
+                    <div style={{ fontWeight: 600, color: '#2B2926' }}>{l.nombre}</div>
+                    <div style={{ fontSize: 12, color: '#8B877F' }}>
+                      {l.rp || 'Sin RP'} · Cierre: {formatDate(l.fecha_cierre)}
+                    </div>
+                    {suggested.length > 0 && (
+                      <div style={{ fontSize: 11, fontWeight: 600, color: SUGGEST_HUE, marginTop: 2 }}>
+                        ★ Posible socio (mismo teléfono): {suggested.map(s => s.name).join(' · ')} — vincula desde su fila arriba
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ flex: '1 1 140px', fontSize: 12, color: '#8B877F' }}>{l.telefono || 'Sin teléfono'}</div>
                 </div>
-              </div>
-              <div style={{ flex: '1 1 140px', fontSize: 12, color: '#8B877F' }}>{l.telefono || 'Sin teléfono'}</div>
-              <select
-                defaultValue=""
-                onChange={e => { if (e.target.value) linkLead(e.target.value, l.id); }}
-                style={captureInputStyle()}
-              >
-                <option value="">Vincular con socio…</option>
-                {unlinkedMembers.map(m => (
-                  <option key={m.id} value={m.id}>{m.name}{m.member_no ? ` · ${m.member_no}` : ''}</option>
-                ))}
-              </select>
-            </div>
-          ))
+              );
+            })
+          )
         )}
       </div>
     </>
