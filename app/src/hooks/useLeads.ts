@@ -112,17 +112,24 @@ export function useLeads() {
     }
   }, [leads]);
 
-  /** Bulk delete (used by "Borrar todos" in Pizarra) — one request instead of N. */
+  /** Bulk delete (used by "Borrar todos" in Pizarra). Chunked, not one `.in()` call with every
+   * id: PostgREST builds that filter into the URL's query string, and "Borrar todos" on 1000+
+   * leads produces a 40,000+ character URL that the server flatly rejects with 400 — which is
+   * why the button silently did nothing on a full leads table. */
   const deleteLeads = useCallback(async (ids: string[]): Promise<boolean> => {
     if (ids.length === 0) return true;
     const prev = leads;
     setLeads(current => current.filter(l => !ids.includes(l.id)));
+    const CHUNK_SIZE = 150;
     try {
-      const { error } = await supabase.from('leads').delete().in('id', ids);
-      if (error) {
-        setError(error.message);
-        setLeads(prev);
-        return false;
+      for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+        const batch = ids.slice(i, i + CHUNK_SIZE);
+        const { error } = await supabase.from('leads').delete().in('id', batch);
+        if (error) {
+          setError(error.message);
+          setLeads(prev);
+          return false;
+        }
       }
       return true;
     } catch (err) {
