@@ -148,6 +148,33 @@ export function CapturaSocios({
     updateLead(leadId, { member_id: null });
   };
 
+  /** Splits unlinked socios into "one confident candidate" (safe to link in bulk with a single
+   * click) vs "more than one" (a duplicate lead capture, most likely — needs a human to pick,
+   * same as the andres-montero/omar-armando cleanup earlier). Never auto-links on its own;
+   * bulkLinkSuggested still requires an explicit click + confirm. */
+  const suggestionStats = useMemo(() => {
+    const unambiguous: { member: Member; lead: Lead }[] = [];
+    let ambiguousCount = 0;
+    for (const m of members) {
+      if (linkedLeadsByMember.has(m.id)) continue;
+      const key = phoneKey(m.phone);
+      if (!key) continue;
+      const candidates = leadsByPhone.get(key) ?? [];
+      if (candidates.length === 1) unambiguous.push({ member: m, lead: candidates[0] });
+      else if (candidates.length > 1) ambiguousCount += 1;
+    }
+    return { unambiguous, ambiguousCount };
+  }, [members, linkedLeadsByMember, leadsByPhone]);
+
+  const bulkLinkSuggested = () => {
+    if (suggestionStats.unambiguous.length === 0) return;
+    const confirmed = window.confirm(
+      `¿Vincular ${suggestionStats.unambiguous.length} socios con el lead que comparte su teléfono? Cada vínculo se puede deshacer después con "Desvincular" si algo no cuadra.`
+    );
+    if (!confirmed) return;
+    for (const { member, lead } of suggestionStats.unambiguous) linkLead(member.id, lead.id);
+  };
+
   return (
     <>
       <datalist id="captura-socios-rp-suggestions">
@@ -190,6 +217,29 @@ export function CapturaSocios({
         subtitle="Verifica el RP de venta y asigna ejecutivo y número de socio a cada nuevo registro del formulario."
         members={members}
         tabs={[
+          {
+            key: 'sugerencias',
+            label: 'Sugerencias por teléfono',
+            filter: m => {
+              if (linkedLeadsByMember.has(m.id)) return false;
+              const key = phoneKey(m.phone);
+              return !!key && (leadsByPhone.get(key)?.length ?? 0) > 0;
+            },
+            emptyMessage: 'No hay sugerencias por teléfono pendientes.',
+            banner: (suggestionStats.unambiguous.length > 0 || suggestionStats.ambiguousCount > 0) && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '10px 14px', background: '#EFFAF1', border: '1px solid #B7E4C7', borderRadius: 8 }}>
+                <div style={{ fontSize: 13, color: SUGGEST_HUE }}>
+                  {suggestionStats.unambiguous.length} con un solo candidato por teléfono
+                  {suggestionStats.ambiguousCount > 0 ? `, ${suggestionStats.ambiguousCount} con más de uno (hay que elegir a mano)` : ''}.
+                </div>
+                {suggestionStats.unambiguous.length > 0 && (
+                  <button onClick={bulkLinkSuggested} style={{ background: SUGGEST_HUE, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    Vincular los {suggestionStats.unambiguous.length} sugeridos
+                  </button>
+                )}
+              </div>
+            ),
+          },
           { key: 'no-socio', label: 'Falta no socio', filter: m => !m.member_no, emptyMessage: 'Todos los socios tienen número de socio asignado.' },
           { key: 'rp', label: 'Falta RP', filter: m => !m.rp, emptyMessage: 'Todos los socios tienen RP asignado.' },
           { key: 'ejecutivo', label: 'Falta Ejecutivo', filter: m => !m.ejecutivo, emptyMessage: 'Todos los socios tienen ejecutivo asignado.' },
@@ -261,20 +311,39 @@ export function CapturaSocios({
                   </div>
                 ))}
               </div>
+            ) : suggested.length > 0 ? (
+              // One-click confirm for the common case: the phone already told us who this is,
+              // so a full dropdown search is friction, not a decision. The select below stays as
+              // an escape hatch — a shared phone can point at the wrong person (see the
+              // "Armando Alvarez" cleanup), so this is always a confirm, never a silent auto-link.
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
+                {suggested.map(l => (
+                  <button
+                    key={l.id}
+                    onClick={() => linkLead(m.id, l.id)}
+                    style={{ background: SUGGEST_HUE, color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  >
+                    ✓ Vincular con {l.nombre}
+                  </button>
+                ))}
+                <select
+                  defaultValue=""
+                  onChange={e => { if (e.target.value) linkLead(m.id, e.target.value); }}
+                  style={{ ...captureInputStyle(), fontSize: 12, color: '#8B877F' }}
+                >
+                  <option value="">…o elige otro lead</option>
+                  {unlinkedWonLeads.map(l => (
+                    <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
+                  ))}
+                </select>
+              </div>
             ) : (
               <select
                 defaultValue=""
                 onChange={e => { if (e.target.value) linkLead(m.id, e.target.value); }}
-                style={{ ...captureInputStyle(), ...(suggested.length > 0 ? { borderColor: SUGGEST_HUE } : undefined) }}
+                style={captureInputStyle()}
               >
                 <option value="">Vincular con lead ganado…</option>
-                {suggested.length > 0 && (
-                  <optgroup label="Mismo teléfono">
-                    {suggested.map(l => (
-                      <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>
-                    ))}
-                  </optgroup>
-                )}
                 <optgroup label="Todos los leads ganados">
                   {unlinkedWonLeads.map(l => (
                     <option key={l.id} value={l.id}>{l.nombre} · {l.rp || 'Sin RP'}</option>

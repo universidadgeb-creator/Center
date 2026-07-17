@@ -9,6 +9,9 @@ export interface RoleQueueTab {
   label: string;
   filter: (m: Member) => boolean;
   emptyMessage?: string;
+  /** Optional content shown above the row list only while this tab is active — e.g. a bulk
+   * action banner for a "suggestions" tab. */
+  banner?: ReactNode;
 }
 
 function segmentBtnStyle(active: boolean): CSSProperties {
@@ -110,6 +113,8 @@ export function RoleQueue({
               </button>
             ))}
           </div>
+
+          {activeTab.banner}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {list.length === 0 && (
